@@ -1,3 +1,261 @@
 ---
 title: "Introduction"
 ---
+
+## Volatility Spillovers Across Asset Classes: Understanding Cryptocurrency's Impact on Traditional Financial Markets
+
+This project explores the connected nature of modern financial markets by examining how volatility, price fluctuation and market uncertainty spread across different asset classes. This analysis specifically focuses on the emerging cryptocurrency market and how they may influence traditional financial instruments, including equities, commodities, bonds, and volatility indices.
+
+Volatility spillovers occur when price shocks or periods of uncertainty in one market affect other markets, creating a domino effect of financial instability or opportunity. While traditional spillover research has long studied connections between established markets (such as how U.S. stock market crashes affect European markets), the rapid growth of cryptocurrency markets has introduced an entirely new dynamic to global financial systems.
+
+The central question driving this research is: **How do cryptocurrency market fluctuations propagate through traditional financial markets, and what does this mean for investors, regulators, and the broader economy?** This investigation is particularly relevant given recent events such as the 2022 cryptocurrency market collapse, the FTX exchange failure, Federal Reserve interest rate policies, and ongoing debates about cryptocurrency regulation and systemic risk.
+
+Unlike traditional financial assets backed by physical assets or cash flows, cryptocurrencies represent a new category of digital assets with unique characteristics: 24/7 trading, high volatility, limited regulation, and strong retail investor participation. Understanding how these distinctive features interact with established financial markets is crucial for modern portfolio management, risk assessment, and financial stability monitoring.
+
+This analysis goes beyond simple correlation studies to examine the directional flow of volatility, the persistence of spillover effects, and how these relationships change during different market conditions—from calm periods to major financial crises.
+
+
+# The Big Picture
+
+![Volatility Spillovers Framework](bigpicture.png)
+
+# Literature Review: Volatility Spillovers Across Asset Classes
+
+## Foundational Spillover Methodology and Traditional Markets
+
+The measurement of volatility spillovers has been revolutionized by the  work of Diebold and Yilmaz (2012), who developed a generalized vector autoregressive framework in which forecast-error variance decompositions are invariant to variable ordering, enabling measures of both total and directional volatility spillovers. Their analysis of US stock, bond, foreign exchange, and commodities markets from 1999 to 2010 demonstrated that cross-market volatility spillovers were quite limited until the global financial crisis, which began in 2007, with particularly important spillovers from the stock market to other markets taking place after the collapse of Lehman Brothers in September 2008. This methodology has been extended by Engle (2002) with Dynamic Conditional Correlation models for evolving correlations, and by Baruník and Křehlík (2018), who introduced frequency-domain analysis to distinguish between short-run trader-driven spillovers and long-run fundamental economic relationships. Recent methodological advances include Antonakakis and Gabauer (2017), who refined these measures to capture time-varying connectedness using TVP-VAR methods that provide more dynamic and sensitive connectedness measurements, particularly when relationships in the system do not remain constant over time.
+
+## Cryptocurrency Integration and Cross-Market Spillovers
+
+The emergence of cryptocurrency markets has fundamentally altered the landscape of financial spillovers, with mounting evidence of significant transmission effects to traditional asset classes. Recent studies demonstrate significant adverse volatility spillover effects from the cryptocurrency market to financial markets across various regions, including North America, South America, Europe, and Asia, with shocks originating in the cryptocurrency market negatively impacting stock markets, volatility indices, and foreign exchange rates globally. Research by the International Monetary Fund (2023) reveals that crypto assets predominantly transmit spillovers to financial markets, though reversals occur during periods of financial stress, with the magnitude of spillovers increasing during periods of heightened turbulence due to negative economic-financial news or crypto market events. The COVID-19 pandemic served as a natural experiment, with empirical analysis showing that the pandemic amplified volatility spillovers, thereby intensifying financial contagion between markets, indicating that the pandemic's impact on the economy heightened risk transmission across markets. Notably, recent Chinese market evidence from 2018-2024 shows that cryptocurrency price volatility causes stock market prices to fluctuate in the same direction while causing gold market prices to fluctuate in the opposite direction, challenging traditional safe-haven assumptions.
+
+## Crisis Dynamics, Frequency Effects, and Research Gaps
+
+The literature reveals that spillover relationships exhibit distinct patterns during crisis periods and across different time horizons, highlighting the importance of frequency-domain analysis and time-varying methodologies. Studies show that heightened crude oil volatility, stock volatility, and economic policy uncertainty contribute to more significant liquidity spillovers within cryptocurrency markets, with increased volatility in exchange rates, crude oil, gold, and stock markets enhancing Ethereum's role as a transmitter of liquidity shocks. Research using DCC-GARCH and wavelet analysis during COVID-19 demonstrates that volatility spillovers in cryptocurrency markets exhibit information inefficiency characteristics, with mutual linkages reflected through volatility co-movement, lead/lag effects, and systematic risk transmission. However, despite these advances, significant gaps remain in the literature. Most existing studies focus on either cryptocurrency-to-crypto spillovers or limited bilateral relationships with specific traditional assets, rather than comprehensive multi-asset class analysis. Additionally, research indicates that extreme fluctuations not predicted by current models are primarily caused by sudden external events, suggesting that existing methods are better suited for early warning of endogenous market volatility rather than exogenous shocks. This project addresses these gaps by providing a systematic analysis of directional spillovers across multiple asset classes while incorporating both crisis-period dynamics and frequency-decomposed effects to better understand the evolving role of cryptocurrencies in global financial stability.
+
+## References
+
+Antonakakis, N., & Gabauer, D. (2017). Refined measures of dynamic connectedness based on time-varying parameter vector autoregressions. *MPRA Paper*.
+
+Baruník, J., & Křehlík, T. (2018). Measuring the frequency dynamics of financial connectedness and systemic risk. *Journal of Financial Econometrics*, 16(2), 271-296.
+
+Diebold, F. X., & Yilmaz, K. (2012). Better to give than to receive: Predictive directional measurement of volatility spillovers. *International Journal of Forecasting*, 28(1), 57-66. https://doi.org/10.1016/j.ijforecast.2011.02.006
+
+Engle, R. (2002). Dynamic conditional correlation: A simple class of multivariate generalized autoregressive conditional heteroskedasticity models. *Journal of Business & Economic Statistics*, 20(3), 339-350.
+
+International Monetary Fund. (2023). New evidence on spillovers between crypto assets and financial markets. *IMF Working Paper*, 2023/213.
+
+Zhang, X., Chen, Z., & Wang, S. (2024). A study of the impact of cryptocurrency price volatility on the stock and gold markets. *North American Journal of Economics and Finance*, 75, 102193.
+
+
+## Analytical Angles
+
+Our volatility spillover analysis is structured around five distinct perspectives, each offering nsights into cryptocurrency-traditional market interactions:
+
+1. **Crypto-Equity Spillovers:** Examining how Bitcoin and Ethereum volatility influences stock market dynamics
+2. **Digital Gold Hypothesis:** Testing whether Bitcoin functions as a safe haven asset comparable to gold
+3. **Fear Gauge Interactions:** Analyzing relationships between crypto volatility and market fear indicators (VIX)
+4. **Frequency Analysis:** Decomposing spillovers into short-term trader effects versus long-term economic relationships
+5. **Crisis Dynamics & Stablecoins:** Understanding how market relationships change during stress periods and stablecoin events
+
+## Guiding Questions
+
+Our analysis addresses twelve fundamental questions that span directional spillovers, market-specific interactions, temporal patterns, and crisis dynamics:
+
+### Directional Spillover Analysis
+1. **Which direction is dominant:** Do cryptocurrency markets transmit volatility to traditional markets, or do they receive volatility from them?
+
+2. **What is the magnitude of spillover effects:** How much of the variance in traditional market volatility can be explained by cryptocurrency market shocks?
+
+3. **How persistent are these effects:** Do crypto-induced volatility spillovers last hours, days, or weeks in traditional markets?
+
+### Market-Specific Interactions
+4. **Does Bitcoin truly behave like "digital gold":** Under what market conditions does Bitcoin correlate positively vs. negatively with gold prices, and when does this relationship break down?
+
+5. **How does crypto volatility relate to the VIX "fear gauge":** Do cryptocurrency market crashes predict spikes in equity market fear, or do they respond to existing market stress?
+
+6. **Which traditional market sectors are most vulnerable:** Are technology stocks more susceptible to crypto spillovers than utility or consumer staple sectors?
+
+### Temporal and Frequency Analysis
+7. **Do spillover patterns exhibit seasonality:** Are there weekly (weekend effects), monthly (options expiry), or quarterly (earnings season) patterns in volatility transmission?
+
+8. **How do short-term vs. long-term spillovers differ:** Are crypto spillovers primarily driven by high-frequency trading noise or by fundamental economic relationships?
+
+9. **How have spillover relationships evolved over time:** Have cryptocurrencies become more or less connected to traditional markets as they've matured?
+
+### Crisis and Event Analysis
+10. **How do major events reshape market connections:** What was the impact of specific events like the FTX collapse, COVID-19 market crash, or Federal Reserve rate hikes on spillover dynamics?
+
+11. **Do stablecoin de-pegging events amplify broader market volatility:** When USDT or USDC lose their dollar peg, does this create systemic risk beyond crypto markets?
+
+12. **Can we identify early warning signals:** Are there leading indicators in cryptocurrency markets that predict broader financial market stress before traditional measures like the VIX?
+
+These questions will guide our analysis and may evolve as findings emerge from exploratory data analysis and model estimation. 
+
+# Data Sources
+
+## Data Requirements Overview
+
+Our analysis satisfies the course requirements by incorporating:
+
+-  **Seasonality data:** Cryptocurrency markets exhibit strong weekly patterns (weekday vs. weekend effects), monthly patterns, and holiday seasonality
+-  **Financial assets:** Multiple asset classes including cryptocurrencies, equities, commodities, bonds, and volatility indices
+-  **3+ univariate time series per analytical angle:** Each of our five angles incorporates multiple distinct time series for comprehensive analysis
+
+---
+
+## Angle 1: Crypto-Equity Spillovers
+
+*Examining how cryptocurrency volatility influences stock market dynamics*
+
+### Bitcoin Daily Returns
+- **Source:** [Yahoo Finance API](https://finance.yahoo.com/quote/BTC-USD) & [CoinGecko API](https://www.coingecko.com/en/api)
+- **Description:** Daily closing prices, returns, and trading volumes for Bitcoin (BTC-USD)
+- **Frequency:** Daily from 2018-present
+- **Acquisition Method:** 
+  ```python
+  import yfinance as yf
+  btc_data = yf.download('BTC-USD', start='2018-01-01', end='2024-12-31')
+  ```
+
+### Ethereum Daily Returns  
+- **Source:** [CoinGecko API](https://www.coingecko.com/en/api/documentation) & [Yahoo Finance](https://finance.yahoo.com/quote/ETH-USD)
+- **Description:** Daily price and volume data for Ethereum (ETH-USD)
+- **Frequency:** Daily from 2018-present
+- **Acquisition Method:** RESTful API calls to CoinGecko with rate limiting
+- **Key Variables:** Price, market cap, trading volume, volatility measures
+
+
+### S&P 500 Returns
+- **Source:** [FRED Economic Data](https://fred.stlouisfed.org/series/SP500) & [Yahoo Finance](https://finance.yahoo.com/quote/%5EGSPC)
+- **Description:** Daily closing values and returns for the S&P 500 index
+- **Frequency:** Daily market data (excluding weekends/holidays)
+- **Acquisition Method:** Direct download from FRED API or Yahoo Finance API
+---
+
+## Angle 2: Digital Gold Hypothesis
+
+*Testing whether Bitcoin functions as a safe haven asset comparable to gold*
+
+### BTC-Gold Price Data
+- **Sources:** 
+  - Bitcoin: [CoinGecko API](https://www.coingecko.com/en/api)
+  - Gold: [COMEX via Quandl](https://www.quandl.com/data/CHRIS/CME_GC1) & [FRED](https://fred.stlouisfed.org/series/GOLDAMGBD228NLBM)
+- **Description:** Daily spot prices for Bitcoin and gold futures/spot prices
+- **Frequency:** Daily from 2018-present
+- **Correlation Analysis:** Rolling 30-day, 90-day, and 365-day correlation windows
+
+
+### Oil Prices (WTI)
+- **Source:** [EIA API](https://www.eia.gov/opendata/) & [FRED](https://fred.stlouisfed.org/series/DCOILWTICO)
+- **Description:** West Texas Intermediate crude oil spot prices
+- **Frequency:** Daily pricing data
+- **Acquisition Method:** 
+  ```python
+  import pandas_datareader as pdr
+  oil_data = pdr.get_data_fred('DCOILWTICO', start='2018-01-01')
+  ```
+
+### Inflation Data (CPI)
+- **Source:** [Bureau of Labor Statistics](https://www.bls.gov/cpi/) & [FRED](https://fred.stlouisfed.org/series/CPIAUCSL)
+- **Description:** Consumer Price Index for All Urban Consumers (CPI-U)
+- **Frequency:** Monthly data (interpolated to daily for analysis)
+- **Seasonality:** Seasonal adjustment factors, holiday price effects
+
+---
+
+## Angle 3: Fear Gauge Interactions
+
+*Analyzing relationships between crypto volatility and market fear indicators*
+
+### VIX Index
+- **Source:** [CBOE](https://www.cboe.com/tradable_products/vix/) & [Yahoo Finance](https://finance.yahoo.com/quote/%5EVIX)
+- **Description:** Chicago Board Options Exchange Volatility Index (fear gauge)
+- **Frequency:** Daily market data
+- **Calculation:** Implied volatility from S&P 500 options
+- **Crisis Indicators:** Spikes above 30 indicate high fear, above 40 indicate extreme fear
+
+### Bitcoin Realized Volatility
+- **Source:** Calculated from Bitcoin price data (CoinGecko/Yahoo Finance)
+- **Description:** Historical volatility measures using various estimators
+- **Calculation Methods:**
+  - Parkinson estimator (high-low volatility)
+  - Garman-Klass-Yang-Zhang estimator  
+  - Simple realized volatility (squared returns)
+- **Frequency:** Daily, with 5-minute intraday data when available
+- **Rolling Windows:** 7-day, 30-day, and 90-day volatility measures
+
+### Crypto Fear & Greed Index
+- **Source:** [Alternative.me API](https://alternative.me/crypto/fear-and-greed-index/)
+- **Description:** Sentiment indicator for cryptocurrency markets (0-100 scale)
+- **Components:** Volatility, market momentum, social media sentiment, surveys, Bitcoin dominance
+- **Frequency:** Daily updates
+- **Acquisition Method:** RESTful API with JSON response parsing
+- **Interpretation:** 0-24 (Extreme Fear), 25-49 (Fear), 50-74 (Greed), 75-100 (Extreme Greed)
+
+---
+
+## Angle 4: Frequency Analysis
+
+*Decomposing spillovers into short-term trader effects versus long-term economic relationships*
+
+### Trading Volume Data
+- **Sources:** 
+  - Crypto: [CoinGecko API](https://www.coingecko.com/en/api), [Binance API](https://binance-docs.github.io/apidocs/)
+  - Equities: [Alpha Vantage](https://www.alphavantage.co/), [Yahoo Finance](https://finance.yahoo.com/)
+- **Description:** Daily and intraday trading volumes across multiple exchanges
+- **Frequency:** Daily aggregates with hourly breakdown when available
+- **Exchange Coverage:** Binance, Coinbase, Kraken for crypto; NYSE, NASDAQ for equities
+- **Volume Metrics:** USD volume, BTC volume, number of trades, average trade size
+
+### Policy Uncertainty Index
+- **Source:** [Economic Policy Uncertainty Index](https://www.policyuncertainty.com/) (Baker, Bloom, Davis)
+- **Description:** News-based measure of economic policy uncertainty
+- **Frequency:** Daily updates based on newspaper coverage
+- **Construction:** Text analysis of major newspapers for uncertainty-related keywords
+- **Website:** https://www.policyuncertainty.com/us_daily.html
+
+
+### Institutional Flow Data
+- **Sources:**
+  - [Grayscale Investments](https://grayscale.com/products/) - Bitcoin and Ethereum Trust flows
+  - [ETF.com](https://www.etf.com/) - Cryptocurrency ETF flows  
+  - [13F filings via SEC EDGAR](https://www.sec.gov/edgar) - Institutional holdings
+- **Description:** Weekly and monthly institutional investment flows into crypto products
+- **Frequency:** Weekly for ETF flows, quarterly for 13F filings
+
+---
+
+## Angle 5: Crisis Dynamics & Stablecoins
+
+*Understanding how market relationships change during stress periods and stablecoin events*
+
+### Stablecoin De-peg Events
+- **Sources:**
+  - USDT: [Tether API](https://tether.to/) & [CoinGecko](https://www.coingecko.com/en/coins/tether)
+  - USDC: [Centre Consortium](https://www.centre.io/) & [CoinGecko](https://www.coingecko.com/en/coins/usd-coin)
+- **Description:** Real-time pricing data for major stablecoins to identify de-pegging events
+- **De-peg Definition:** Price deviation >0.5% from $1.00 USD for >24 hours
+- **Historical Events:** May 2022 Terra Luna collapse, March 2023 Silicon Valley Bank crisis
+- **Data Frequency:** Hourly pricing data to capture intraday de-pegging
+
+### Fed Policy Announcements
+- **Source:** [Federal Reserve Economic Data (FRED)](https://fred.stlouisfed.org/) & [Fed Meeting Calendar](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm)
+- **Description:** FOMC meeting dates, interest rate decisions, and policy statement releases
+- **Event Types:** Rate decisions, forward guidance changes, emergency meetings
+- **Frequency:** 8 scheduled meetings per year plus emergency meetings
+- **Data Structure:** Event dates with binary indicators for rate changes, QE announcements
+
+### Major Crypto Crashes
+- **Sources:** News archives, exchange data, academic event studies
+- **Description:** Timeline of major cryptocurrency market events and crashes
+- **Key Events:**
+  - March 2020: COVID-19 market crash
+  - May 2021: China mining ban announcement  
+  - November 2022: FTX exchange collapse
+  - March 2023: Banking sector stress (SVB, Credit Suisse)
+- **Data Construction:** Event dates with market impact measurement windows
+- **Impact Metrics:** 24-hour, 7-day, and 30-day return impacts across asset classes
+
+---
+

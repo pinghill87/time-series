@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -169,8 +203,314 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="volatility-spillovers-across-asset-classes-understanding-cryptocurrencys-impact-on-traditional-financial-markets" class="level2">
+<h2 class="anchored" data-anchor-id="volatility-spillovers-across-asset-classes-understanding-cryptocurrencys-impact-on-traditional-financial-markets">Volatility Spillovers Across Asset Classes: Understanding Cryptocurrency’s Impact on Traditional Financial Markets</h2>
+<p>This project explores the connected nature of modern financial markets by examining how volatility, price fluctuation and market uncertainty spread across different asset classes. This analysis specifically focuses on the emerging cryptocurrency market and how they may influence traditional financial instruments, including equities, commodities, bonds, and volatility indices.</p>
+<p>Volatility spillovers occur when price shocks or periods of uncertainty in one market affect other markets, creating a domino effect of financial instability or opportunity. While traditional spillover research has long studied connections between established markets (such as how U.S. stock market crashes affect European markets), the rapid growth of cryptocurrency markets has introduced an entirely new dynamic to global financial systems.</p>
+<p>The central question driving this research is: <strong>How do cryptocurrency market fluctuations propagate through traditional financial markets, and what does this mean for investors, regulators, and the broader economy?</strong> This investigation is particularly relevant given recent events such as the 2022 cryptocurrency market collapse, the FTX exchange failure, Federal Reserve interest rate policies, and ongoing debates about cryptocurrency regulation and systemic risk.</p>
+<p>Unlike traditional financial assets backed by physical assets or cash flows, cryptocurrencies represent a new category of digital assets with unique characteristics: 24/7 trading, high volatility, limited regulation, and strong retail investor participation. Understanding how these distinctive features interact with established financial markets is crucial for modern portfolio management, risk assessment, and financial stability monitoring.</p>
+<p>This analysis goes beyond simple correlation studies to examine the directional flow of volatility, the persistence of spillover effects, and how these relationships change during different market conditions—from calm periods to major financial crises.</p>
+</section>
+<section id="the-big-picture" class="level1">
+<h1>The Big Picture</h1>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="bigpicture.png" class="img-fluid figure-img"></p>
+<figcaption>Volatility Spillovers Framework</figcaption>
+</figure>
+</div>
+</section>
+<section id="literature-review-volatility-spillovers-across-asset-classes" class="level1">
+<h1>Literature Review: Volatility Spillovers Across Asset Classes</h1>
+<section id="foundational-spillover-methodology-and-traditional-markets" class="level2">
+<h2 class="anchored" data-anchor-id="foundational-spillover-methodology-and-traditional-markets">Foundational Spillover Methodology and Traditional Markets</h2>
+<p>The measurement of volatility spillovers has been revolutionized by the work of Diebold and Yilmaz (2012), who developed a generalized vector autoregressive framework in which forecast-error variance decompositions are invariant to variable ordering, enabling measures of both total and directional volatility spillovers. Their analysis of US stock, bond, foreign exchange, and commodities markets from 1999 to 2010 demonstrated that cross-market volatility spillovers were quite limited until the global financial crisis, which began in 2007, with particularly important spillovers from the stock market to other markets taking place after the collapse of Lehman Brothers in September 2008. This methodology has been extended by Engle (2002) with Dynamic Conditional Correlation models for evolving correlations, and by Baruník and Křehlík (2018), who introduced frequency-domain analysis to distinguish between short-run trader-driven spillovers and long-run fundamental economic relationships. Recent methodological advances include Antonakakis and Gabauer (2017), who refined these measures to capture time-varying connectedness using TVP-VAR methods that provide more dynamic and sensitive connectedness measurements, particularly when relationships in the system do not remain constant over time.</p>
+</section>
+<section id="cryptocurrency-integration-and-cross-market-spillovers" class="level2">
+<h2 class="anchored" data-anchor-id="cryptocurrency-integration-and-cross-market-spillovers">Cryptocurrency Integration and Cross-Market Spillovers</h2>
+<p>The emergence of cryptocurrency markets has fundamentally altered the landscape of financial spillovers, with mounting evidence of significant transmission effects to traditional asset classes. Recent studies demonstrate significant adverse volatility spillover effects from the cryptocurrency market to financial markets across various regions, including North America, South America, Europe, and Asia, with shocks originating in the cryptocurrency market negatively impacting stock markets, volatility indices, and foreign exchange rates globally. Research by the International Monetary Fund (2023) reveals that crypto assets predominantly transmit spillovers to financial markets, though reversals occur during periods of financial stress, with the magnitude of spillovers increasing during periods of heightened turbulence due to negative economic-financial news or crypto market events. The COVID-19 pandemic served as a natural experiment, with empirical analysis showing that the pandemic amplified volatility spillovers, thereby intensifying financial contagion between markets, indicating that the pandemic’s impact on the economy heightened risk transmission across markets. Notably, recent Chinese market evidence from 2018-2024 shows that cryptocurrency price volatility causes stock market prices to fluctuate in the same direction while causing gold market prices to fluctuate in the opposite direction, challenging traditional safe-haven assumptions.</p>
+</section>
+<section id="crisis-dynamics-frequency-effects-and-research-gaps" class="level2">
+<h2 class="anchored" data-anchor-id="crisis-dynamics-frequency-effects-and-research-gaps">Crisis Dynamics, Frequency Effects, and Research Gaps</h2>
+<p>The literature reveals that spillover relationships exhibit distinct patterns during crisis periods and across different time horizons, highlighting the importance of frequency-domain analysis and time-varying methodologies. Studies show that heightened crude oil volatility, stock volatility, and economic policy uncertainty contribute to more significant liquidity spillovers within cryptocurrency markets, with increased volatility in exchange rates, crude oil, gold, and stock markets enhancing Ethereum’s role as a transmitter of liquidity shocks. Research using DCC-GARCH and wavelet analysis during COVID-19 demonstrates that volatility spillovers in cryptocurrency markets exhibit information inefficiency characteristics, with mutual linkages reflected through volatility co-movement, lead/lag effects, and systematic risk transmission. However, despite these advances, significant gaps remain in the literature. Most existing studies focus on either cryptocurrency-to-crypto spillovers or limited bilateral relationships with specific traditional assets, rather than comprehensive multi-asset class analysis. Additionally, research indicates that extreme fluctuations not predicted by current models are primarily caused by sudden external events, suggesting that existing methods are better suited for early warning of endogenous market volatility rather than exogenous shocks. This project addresses these gaps by providing a systematic analysis of directional spillovers across multiple asset classes while incorporating both crisis-period dynamics and frequency-decomposed effects to better understand the evolving role of cryptocurrencies in global financial stability.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Antonakakis, N., &amp; Gabauer, D. (2017). Refined measures of dynamic connectedness based on time-varying parameter vector autoregressions. <em>MPRA Paper</em>.</p>
+<p>Baruník, J., &amp; Křehlík, T. (2018). Measuring the frequency dynamics of financial connectedness and systemic risk. <em>Journal of Financial Econometrics</em>, 16(2), 271-296.</p>
+<p>Diebold, F. X., &amp; Yilmaz, K. (2012). Better to give than to receive: Predictive directional measurement of volatility spillovers. <em>International Journal of Forecasting</em>, 28(1), 57-66. https://doi.org/10.1016/j.ijforecast.2011.02.006</p>
+<p>Engle, R. (2002). Dynamic conditional correlation: A simple class of multivariate generalized autoregressive conditional heteroskedasticity models. <em>Journal of Business &amp; Economic Statistics</em>, 20(3), 339-350.</p>
+<p>International Monetary Fund. (2023). New evidence on spillovers between crypto assets and financial markets. <em>IMF Working Paper</em>, 2023/213.</p>
+<p>Zhang, X., Chen, Z., &amp; Wang, S. (2024). A study of the impact of cryptocurrency price volatility on the stock and gold markets. <em>North American Journal of Economics and Finance</em>, 75, 102193.</p>
+</section>
+<section id="analytical-angles" class="level2">
+<h2 class="anchored" data-anchor-id="analytical-angles">Analytical Angles</h2>
+<p>Our volatility spillover analysis is structured around five distinct perspectives, each offering nsights into cryptocurrency-traditional market interactions:</p>
+<ol type="1">
+<li><strong>Crypto-Equity Spillovers:</strong> Examining how Bitcoin and Ethereum volatility influences stock market dynamics</li>
+<li><strong>Digital Gold Hypothesis:</strong> Testing whether Bitcoin functions as a safe haven asset comparable to gold</li>
+<li><strong>Fear Gauge Interactions:</strong> Analyzing relationships between crypto volatility and market fear indicators (VIX)</li>
+<li><strong>Frequency Analysis:</strong> Decomposing spillovers into short-term trader effects versus long-term economic relationships</li>
+<li><strong>Crisis Dynamics &amp; Stablecoins:</strong> Understanding how market relationships change during stress periods and stablecoin events</li>
+</ol>
+</section>
+<section id="guiding-questions" class="level2">
+<h2 class="anchored" data-anchor-id="guiding-questions">Guiding Questions</h2>
+<p>Our analysis addresses twelve fundamental questions that span directional spillovers, market-specific interactions, temporal patterns, and crisis dynamics:</p>
+<section id="directional-spillover-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="directional-spillover-analysis">Directional Spillover Analysis</h3>
+<ol type="1">
+<li><p><strong>Which direction is dominant:</strong> Do cryptocurrency markets transmit volatility to traditional markets, or do they receive volatility from them?</p></li>
+<li><p><strong>What is the magnitude of spillover effects:</strong> How much of the variance in traditional market volatility can be explained by cryptocurrency market shocks?</p></li>
+<li><p><strong>How persistent are these effects:</strong> Do crypto-induced volatility spillovers last hours, days, or weeks in traditional markets?</p></li>
+</ol>
+</section>
+<section id="market-specific-interactions" class="level3">
+<h3 class="anchored" data-anchor-id="market-specific-interactions">Market-Specific Interactions</h3>
+<ol start="4" type="1">
+<li><p><strong>Does Bitcoin truly behave like “digital gold”:</strong> Under what market conditions does Bitcoin correlate positively vs.&nbsp;negatively with gold prices, and when does this relationship break down?</p></li>
+<li><p><strong>How does crypto volatility relate to the VIX “fear gauge”:</strong> Do cryptocurrency market crashes predict spikes in equity market fear, or do they respond to existing market stress?</p></li>
+<li><p><strong>Which traditional market sectors are most vulnerable:</strong> Are technology stocks more susceptible to crypto spillovers than utility or consumer staple sectors?</p></li>
+</ol>
+</section>
+<section id="temporal-and-frequency-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="temporal-and-frequency-analysis">Temporal and Frequency Analysis</h3>
+<ol start="7" type="1">
+<li><p><strong>Do spillover patterns exhibit seasonality:</strong> Are there weekly (weekend effects), monthly (options expiry), or quarterly (earnings season) patterns in volatility transmission?</p></li>
+<li><p><strong>How do short-term vs.&nbsp;long-term spillovers differ:</strong> Are crypto spillovers primarily driven by high-frequency trading noise or by fundamental economic relationships?</p></li>
+<li><p><strong>How have spillover relationships evolved over time:</strong> Have cryptocurrencies become more or less connected to traditional markets as they’ve matured?</p></li>
+</ol>
+</section>
+<section id="crisis-and-event-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="crisis-and-event-analysis">Crisis and Event Analysis</h3>
+<ol start="10" type="1">
+<li><p><strong>How do major events reshape market connections:</strong> What was the impact of specific events like the FTX collapse, COVID-19 market crash, or Federal Reserve rate hikes on spillover dynamics?</p></li>
+<li><p><strong>Do stablecoin de-pegging events amplify broader market volatility:</strong> When USDT or USDC lose their dollar peg, does this create systemic risk beyond crypto markets?</p></li>
+<li><p><strong>Can we identify early warning signals:</strong> Are there leading indicators in cryptocurrency markets that predict broader financial market stress before traditional measures like the VIX?</p></li>
+</ol>
+<p>These questions will guide our analysis and may evolve as findings emerge from exploratory data analysis and model estimation.</p>
+</section>
+</section>
+</section>
+<section id="data-sources" class="level1">
+<h1>Data Sources</h1>
+<section id="data-requirements-overview" class="level2">
+<h2 class="anchored" data-anchor-id="data-requirements-overview">Data Requirements Overview</h2>
+<p>Our analysis satisfies the course requirements by incorporating:</p>
+<ul>
+<li><strong>Seasonality data:</strong> Cryptocurrency markets exhibit strong weekly patterns (weekday vs.&nbsp;weekend effects), monthly patterns, and holiday seasonality</li>
+<li><strong>Financial assets:</strong> Multiple asset classes including cryptocurrencies, equities, commodities, bonds, and volatility indices</li>
+<li><strong>3+ univariate time series per analytical angle:</strong> Each of our five angles incorporates multiple distinct time series for comprehensive analysis</li>
+</ul>
+<hr>
+</section>
+<section id="angle-1-crypto-equity-spillovers" class="level2">
+<h2 class="anchored" data-anchor-id="angle-1-crypto-equity-spillovers">Angle 1: Crypto-Equity Spillovers</h2>
+<p><em>Examining how cryptocurrency volatility influences stock market dynamics</em></p>
+<section id="bitcoin-daily-returns" class="level3">
+<h3 class="anchored" data-anchor-id="bitcoin-daily-returns">Bitcoin Daily Returns</h3>
+<ul>
+<li><p><strong>Source:</strong> <a href="https://finance.yahoo.com/quote/BTC-USD">Yahoo Finance API</a> &amp; <a href="https://www.coingecko.com/en/api">CoinGecko API</a></p></li>
+<li><p><strong>Description:</strong> Daily closing prices, returns, and trading volumes for Bitcoin (BTC-USD)</p></li>
+<li><p><strong>Frequency:</strong> Daily from 2018-present</p></li>
+<li><p><strong>Acquisition Method:</strong></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yfinance <span class="im">as</span> yf</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>btc_data <span class="op">=</span> yf.download(<span class="st">'BTC-USD'</span>, start<span class="op">=</span><span class="st">'2018-01-01'</span>, end<span class="op">=</span><span class="st">'2024-12-31'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+</ul>
+</section>
+<section id="ethereum-daily-returns" class="level3">
+<h3 class="anchored" data-anchor-id="ethereum-daily-returns">Ethereum Daily Returns</h3>
+<ul>
+<li><strong>Source:</strong> <a href="https://www.coingecko.com/en/api/documentation">CoinGecko API</a> &amp; <a href="https://finance.yahoo.com/quote/ETH-USD">Yahoo Finance</a></li>
+<li><strong>Description:</strong> Daily price and volume data for Ethereum (ETH-USD)</li>
+<li><strong>Frequency:</strong> Daily from 2018-present</li>
+<li><strong>Acquisition Method:</strong> RESTful API calls to CoinGecko with rate limiting</li>
+<li><strong>Key Variables:</strong> Price, market cap, trading volume, volatility measures</li>
+</ul>
+</section>
+<section id="sp-500-returns" class="level3">
+<h3 class="anchored" data-anchor-id="sp-500-returns">S&amp;P 500 Returns</h3>
+<ul>
+<li><strong>Source:</strong> <a href="https://fred.stlouisfed.org/series/SP500">FRED Economic Data</a> &amp; <a href="https://finance.yahoo.com/quote/%5EGSPC">Yahoo Finance</a></li>
+<li><strong>Description:</strong> Daily closing values and returns for the S&amp;P 500 index</li>
+<li><strong>Frequency:</strong> Daily market data (excluding weekends/holidays)</li>
+<li><strong>Acquisition Method:</strong> Direct download from FRED API or Yahoo Finance API</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="angle-2-digital-gold-hypothesis" class="level2">
+<h2 class="anchored" data-anchor-id="angle-2-digital-gold-hypothesis">Angle 2: Digital Gold Hypothesis</h2>
+<p><em>Testing whether Bitcoin functions as a safe haven asset comparable to gold</em></p>
+<section id="btc-gold-price-data" class="level3">
+<h3 class="anchored" data-anchor-id="btc-gold-price-data">BTC-Gold Price Data</h3>
+<ul>
+<li><strong>Sources:</strong>
+<ul>
+<li>Bitcoin: <a href="https://www.coingecko.com/en/api">CoinGecko API</a></li>
+<li>Gold: <a href="https://www.quandl.com/data/CHRIS/CME_GC1">COMEX via Quandl</a> &amp; <a href="https://fred.stlouisfed.org/series/GOLDAMGBD228NLBM">FRED</a></li>
+</ul></li>
+<li><strong>Description:</strong> Daily spot prices for Bitcoin and gold futures/spot prices</li>
+<li><strong>Frequency:</strong> Daily from 2018-present</li>
+<li><strong>Correlation Analysis:</strong> Rolling 30-day, 90-day, and 365-day correlation windows</li>
+</ul>
+</section>
+<section id="oil-prices-wti" class="level3">
+<h3 class="anchored" data-anchor-id="oil-prices-wti">Oil Prices (WTI)</h3>
+<ul>
+<li><p><strong>Source:</strong> <a href="https://www.eia.gov/opendata/">EIA API</a> &amp; <a href="https://fred.stlouisfed.org/series/DCOILWTICO">FRED</a></p></li>
+<li><p><strong>Description:</strong> West Texas Intermediate crude oil spot prices</p></li>
+<li><p><strong>Frequency:</strong> Daily pricing data</p></li>
+<li><p><strong>Acquisition Method:</strong></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas_datareader <span class="im">as</span> pdr</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>oil_data <span class="op">=</span> pdr.get_data_fred(<span class="st">'DCOILWTICO'</span>, start<span class="op">=</span><span class="st">'2018-01-01'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+</ul>
+</section>
+<section id="inflation-data-cpi" class="level3">
+<h3 class="anchored" data-anchor-id="inflation-data-cpi">Inflation Data (CPI)</h3>
+<ul>
+<li><strong>Source:</strong> <a href="https://www.bls.gov/cpi/">Bureau of Labor Statistics</a> &amp; <a href="https://fred.stlouisfed.org/series/CPIAUCSL">FRED</a></li>
+<li><strong>Description:</strong> Consumer Price Index for All Urban Consumers (CPI-U)</li>
+<li><strong>Frequency:</strong> Monthly data (interpolated to daily for analysis)</li>
+<li><strong>Seasonality:</strong> Seasonal adjustment factors, holiday price effects</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="angle-3-fear-gauge-interactions" class="level2">
+<h2 class="anchored" data-anchor-id="angle-3-fear-gauge-interactions">Angle 3: Fear Gauge Interactions</h2>
+<p><em>Analyzing relationships between crypto volatility and market fear indicators</em></p>
+<section id="vix-index" class="level3">
+<h3 class="anchored" data-anchor-id="vix-index">VIX Index</h3>
+<ul>
+<li><strong>Source:</strong> <a href="https://www.cboe.com/tradable_products/vix/">CBOE</a> &amp; <a href="https://finance.yahoo.com/quote/%5EVIX">Yahoo Finance</a></li>
+<li><strong>Description:</strong> Chicago Board Options Exchange Volatility Index (fear gauge)</li>
+<li><strong>Frequency:</strong> Daily market data</li>
+<li><strong>Calculation:</strong> Implied volatility from S&amp;P 500 options</li>
+<li><strong>Crisis Indicators:</strong> Spikes above 30 indicate high fear, above 40 indicate extreme fear</li>
+</ul>
+</section>
+<section id="bitcoin-realized-volatility" class="level3">
+<h3 class="anchored" data-anchor-id="bitcoin-realized-volatility">Bitcoin Realized Volatility</h3>
+<ul>
+<li><strong>Source:</strong> Calculated from Bitcoin price data (CoinGecko/Yahoo Finance)</li>
+<li><strong>Description:</strong> Historical volatility measures using various estimators</li>
+<li><strong>Calculation Methods:</strong>
+<ul>
+<li>Parkinson estimator (high-low volatility)</li>
+<li>Garman-Klass-Yang-Zhang estimator<br>
+</li>
+<li>Simple realized volatility (squared returns)</li>
+</ul></li>
+<li><strong>Frequency:</strong> Daily, with 5-minute intraday data when available</li>
+<li><strong>Rolling Windows:</strong> 7-day, 30-day, and 90-day volatility measures</li>
+</ul>
+</section>
+<section id="crypto-fear-greed-index" class="level3">
+<h3 class="anchored" data-anchor-id="crypto-fear-greed-index">Crypto Fear &amp; Greed Index</h3>
+<ul>
+<li><strong>Source:</strong> <a href="https://alternative.me/crypto/fear-and-greed-index/">Alternative.me API</a></li>
+<li><strong>Description:</strong> Sentiment indicator for cryptocurrency markets (0-100 scale)</li>
+<li><strong>Components:</strong> Volatility, market momentum, social media sentiment, surveys, Bitcoin dominance</li>
+<li><strong>Frequency:</strong> Daily updates</li>
+<li><strong>Acquisition Method:</strong> RESTful API with JSON response parsing</li>
+<li><strong>Interpretation:</strong> 0-24 (Extreme Fear), 25-49 (Fear), 50-74 (Greed), 75-100 (Extreme Greed)</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="angle-4-frequency-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="angle-4-frequency-analysis">Angle 4: Frequency Analysis</h2>
+<p><em>Decomposing spillovers into short-term trader effects versus long-term economic relationships</em></p>
+<section id="trading-volume-data" class="level3">
+<h3 class="anchored" data-anchor-id="trading-volume-data">Trading Volume Data</h3>
+<ul>
+<li><strong>Sources:</strong>
+<ul>
+<li>Crypto: <a href="https://www.coingecko.com/en/api">CoinGecko API</a>, <a href="https://binance-docs.github.io/apidocs/">Binance API</a></li>
+<li>Equities: <a href="https://www.alphavantage.co/">Alpha Vantage</a>, <a href="https://finance.yahoo.com/">Yahoo Finance</a></li>
+</ul></li>
+<li><strong>Description:</strong> Daily and intraday trading volumes across multiple exchanges</li>
+<li><strong>Frequency:</strong> Daily aggregates with hourly breakdown when available</li>
+<li><strong>Exchange Coverage:</strong> Binance, Coinbase, Kraken for crypto; NYSE, NASDAQ for equities</li>
+<li><strong>Volume Metrics:</strong> USD volume, BTC volume, number of trades, average trade size</li>
+</ul>
+</section>
+<section id="policy-uncertainty-index" class="level3">
+<h3 class="anchored" data-anchor-id="policy-uncertainty-index">Policy Uncertainty Index</h3>
+<ul>
+<li><strong>Source:</strong> <a href="https://www.policyuncertainty.com/">Economic Policy Uncertainty Index</a> (Baker, Bloom, Davis)</li>
+<li><strong>Description:</strong> News-based measure of economic policy uncertainty</li>
+<li><strong>Frequency:</strong> Daily updates based on newspaper coverage</li>
+<li><strong>Construction:</strong> Text analysis of major newspapers for uncertainty-related keywords</li>
+<li><strong>Website:</strong> https://www.policyuncertainty.com/us_daily.html</li>
+</ul>
+</section>
+<section id="institutional-flow-data" class="level3">
+<h3 class="anchored" data-anchor-id="institutional-flow-data">Institutional Flow Data</h3>
+<ul>
+<li><strong>Sources:</strong>
+<ul>
+<li><a href="https://grayscale.com/products/">Grayscale Investments</a> - Bitcoin and Ethereum Trust flows</li>
+<li><a href="https://www.etf.com/">ETF.com</a> - Cryptocurrency ETF flows<br>
+</li>
+<li><a href="https://www.sec.gov/edgar">13F filings via SEC EDGAR</a> - Institutional holdings</li>
+</ul></li>
+<li><strong>Description:</strong> Weekly and monthly institutional investment flows into crypto products</li>
+<li><strong>Frequency:</strong> Weekly for ETF flows, quarterly for 13F filings</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="angle-5-crisis-dynamics-stablecoins" class="level2">
+<h2 class="anchored" data-anchor-id="angle-5-crisis-dynamics-stablecoins">Angle 5: Crisis Dynamics &amp; Stablecoins</h2>
+<p><em>Understanding how market relationships change during stress periods and stablecoin events</em></p>
+<section id="stablecoin-de-peg-events" class="level3">
+<h3 class="anchored" data-anchor-id="stablecoin-de-peg-events">Stablecoin De-peg Events</h3>
+<ul>
+<li><strong>Sources:</strong>
+<ul>
+<li>USDT: <a href="https://tether.to/">Tether API</a> &amp; <a href="https://www.coingecko.com/en/coins/tether">CoinGecko</a></li>
+<li>USDC: <a href="https://www.centre.io/">Centre Consortium</a> &amp; <a href="https://www.coingecko.com/en/coins/usd-coin">CoinGecko</a></li>
+</ul></li>
+<li><strong>Description:</strong> Real-time pricing data for major stablecoins to identify de-pegging events</li>
+<li><strong>De-peg Definition:</strong> Price deviation &gt;0.5% from $1.00 USD for &gt;24 hours</li>
+<li><strong>Historical Events:</strong> May 2022 Terra Luna collapse, March 2023 Silicon Valley Bank crisis</li>
+<li><strong>Data Frequency:</strong> Hourly pricing data to capture intraday de-pegging</li>
+</ul>
+</section>
+<section id="fed-policy-announcements" class="level3">
+<h3 class="anchored" data-anchor-id="fed-policy-announcements">Fed Policy Announcements</h3>
+<ul>
+<li><strong>Source:</strong> <a href="https://fred.stlouisfed.org/">Federal Reserve Economic Data (FRED)</a> &amp; <a href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm">Fed Meeting Calendar</a></li>
+<li><strong>Description:</strong> FOMC meeting dates, interest rate decisions, and policy statement releases</li>
+<li><strong>Event Types:</strong> Rate decisions, forward guidance changes, emergency meetings</li>
+<li><strong>Frequency:</strong> 8 scheduled meetings per year plus emergency meetings</li>
+<li><strong>Data Structure:</strong> Event dates with binary indicators for rate changes, QE announcements</li>
+</ul>
+</section>
+<section id="major-crypto-crashes" class="level3">
+<h3 class="anchored" data-anchor-id="major-crypto-crashes">Major Crypto Crashes</h3>
+<ul>
+<li><strong>Sources:</strong> News archives, exchange data, academic event studies</li>
+<li><strong>Description:</strong> Timeline of major cryptocurrency market events and crashes</li>
+<li><strong>Key Events:</strong>
+<ul>
+<li>March 2020: COVID-19 market crash</li>
+<li>May 2021: China mining ban announcement<br>
+</li>
+<li>November 2022: FTX exchange collapse</li>
+<li>March 2023: Banking sector stress (SVB, Credit Suisse)</li>
+</ul></li>
+<li><strong>Data Construction:</strong> Event dates with market impact measurement windows</li>
+<li><strong>Impact Metrics:</strong> 24-hour, 7-day, and 30-day return impacts across asset classes</li>
+</ul>
+<hr>
 
 
+</section>
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
