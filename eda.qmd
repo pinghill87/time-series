@@ -1,5 +1,6 @@
 ---
 title: "Exploratory Data Analysis"
+code-fold: true
 ---
 
 ```{python}

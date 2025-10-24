@@ -203,7 +203,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<div id="ae254386" class="cell" data-execution_count="1">
+<div id="5846130d" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># %%</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># EDA Setup and Data Loading</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
@@ -255,6 +257,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>    returns <span class="op">=</span> price_data.pct_change().dropna()</span>
 <span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Data loaded: </span><span class="sc">{</span>price_data<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>EXPLORATORY DATA ANALYSIS (EDA)
 ============================================================
@@ -262,7 +265,9 @@ Loading financial data...
 Data loaded: (2453, 3)</code></pre>
 </div>
 </div>
-<div id="4278e875" class="cell" data-execution_count="2">
+<div id="1c5e4a85" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># %%</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. TIME SERIES PLOTS AND COMPONENT IDENTIFICATION</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">1. TIME SERIES COMPONENT IDENTIFICATION"</span>)</span>
@@ -293,6 +298,7 @@ Data loaded: (2453, 3)</code></pre>
 <span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
 <span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 1. TIME SERIES COMPONENT IDENTIFICATION
@@ -306,7 +312,9 @@ Data loaded: (2453, 3)</code></pre>
 </div>
 </div>
 </div>
-<div id="2fabce64" class="cell" data-execution_count="3">
+<div id="c18e731f" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Component Analysis</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">COMPONENT ANALYSIS:"</span>)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"-"</span> <span class="op">*</span> <span class="dv">30</span>)</span>
@@ -331,6 +339,7 @@ Data loaded: (2453, 3)</code></pre>
 <span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>            </span>
 <span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>            seasonality_type <span class="op">=</span> <span class="st">"Multiplicative"</span> <span class="cf">if</span> var_ratio <span class="op">&gt;</span> <span class="dv">2</span> <span class="cf">else</span> <span class="st">"Additive"</span></span>
 <span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  • Seasonality Type: </span><span class="sc">{</span>seasonality_type<span class="sc">}</span><span class="ss"> (variance ratio: </span><span class="sc">{</span>var_ratio<span class="sc">:.2f}</span><span class="ss">)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 COMPONENT ANALYSIS:
@@ -355,7 +364,9 @@ VIX:
   • Seasonality Type: Multiplicative (variance ratio: 19.87)</code></pre>
 </div>
 </div>
-<div id="abda7599" class="cell" data-execution_count="4">
+<div id="a23d9747" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># %%</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. LAG PLOTS ANALYSIS</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\n</span><span class="st">2. LAG PLOTS ANALYSIS"</span>)</span>
@@ -427,6 +438,7 @@ VIX:
 <span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"    → </span><span class="sc">{</span>asset<span class="sc">}</span><span class="ss"> shows moderate trend component"</span>)</span>
 <span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
 <span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"    → </span><span class="sc">{</span>asset<span class="sc">}</span><span class="ss"> shows mean-reverting behavior"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 
@@ -473,7 +485,9 @@ SP500:
     → SP500 shows strong trend/non-stationarity</code></pre>
 </div>
 </div>
-<div id="70c0dadc" class="cell" data-execution_count="5">
+<div id="f2ce2dc8" class="cell" data-execution_count="5">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> perform_decomposition(data, asset_name, model<span class="op">=</span><span class="st">'additive'</span>, period<span class="op">=</span><span class="dv">252</span>):</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Perform time series decomposition"""</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
@@ -543,6 +557,7 @@ SP500:
 <span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>                <span class="st">'seasonal_strength'</span>: seasonal_str,</span>
 <span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>                <span class="st">'model'</span>: <span class="st">'additive'</span></span>
 <span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>            }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Decomposing Bitcoin...</code></pre>
@@ -566,7 +581,9 @@ Decomposing SP500...</code></pre>
 </div>
 </div>
 </div>
-<div id="00746df8" class="cell" data-execution_count="6">
+<div id="51aa360e" class="cell" data-execution_count="6">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Print decomposition insights</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">DECOMPOSITION INSIGHTS:"</span>)</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"-"</span> <span class="op">*</span> <span class="dv">30</span>)</span>
@@ -587,6 +604,7 @@ Decomposing SP500...</code></pre>
 <span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"    → Notable seasonal patterns"</span>)</span>
 <span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
 <span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"    → Minimal seasonality"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 DECOMPOSITION INSIGHTS:
@@ -605,7 +623,9 @@ SP500 (additive model):
     → Minimal seasonality</code></pre>
 </div>
 </div>
-<div id="f555efcc" class="cell" data-execution_count="7">
+<div id="ca7e1e1d" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># %%</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. ACF AND PACF ANALYSIS</span></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\n</span><span class="st">4. AUTOCORRELATION ANALYSIS (ACF/PACF)"</span>)</span>
@@ -816,6 +836,7 @@ SP500 (additive model):
 <span id="cb16-208"><a href="#cb16-208" aria-hidden="true" tabindex="-1"></a><span class="co"># 7. MOVING AVERAGE SMOOTHING ANALYSIS</span></span>
 <span id="cb16-209"><a href="#cb16-209" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\n</span><span class="st">7. MOVING AVERAGE SMOOTHING"</span>)</span>
 <span id="cb16-210"><a href="#cb16-210" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"-"</span> <span class="op">*</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 
@@ -928,7 +949,9 @@ Stationarity tests for SP500 transformations:
 --------------------------------------------------</code></pre>
 </div>
 </div>
-<div id="9bb029ee" class="cell" data-execution_count="8">
+<div id="0557d06c" class="cell" data-execution_count="8">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> moving_average_analysis(data, asset_name, windows<span class="op">=</span>[<span class="dv">5</span>, <span class="dv">20</span>, <span class="dv">60</span>, <span class="dv">120</span>]):</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Analyze different moving average windows"""</span></span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    </span>
@@ -1092,6 +1115,7 @@ Stationarity tests for SP500 transformations:
 <span id="cb22-161"><a href="#cb22-161" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">"</span> <span class="op">+</span> <span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
 <span id="cb22-162"><a href="#cb22-162" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"EDA COMPLETE - Ready for Time Series Modeling"</span>)</span>
 <span id="cb22-163"><a href="#cb22-163" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Analyzing moving averages for Bitcoin...</code></pre>
@@ -1191,7 +1215,9 @@ EDA COMPLETE - Ready for Time Series Modeling
 ============================================================</code></pre>
 </div>
 </div>
-<div id="63b28abd" class="cell" data-execution_count="9">
+<div id="b82f849a" class="cell" data-execution_count="9">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># %%</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span><span class="op">*</span><span class="dv">80</span>)</span>
@@ -1447,6 +1473,7 @@ EDA COMPLETE - Ready for Time Series Modeling
 <span id="cb26-253"><a href="#cb26-253" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb26-254"><a href="#cb26-254" aria-hidden="true" tabindex="-1"></a><span class="st">NEXT STEPS: Ready to proceed with ARIMA/SARIMA univariate modeling.</span></span>
 <span id="cb26-255"><a href="#cb26-255" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 ================================================================================
