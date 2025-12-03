@@ -1,1470 +1,485 @@
 ---
 title: "Univariate TS Models (ARIMA/SARIMA)"
 code-fold: true
+execute:
+  cache: true
+  freeze: auto
 ---
-```{python}
-#| echo: false
-import sys
-print(f"Python: {sys.executable}")
-```
 
+```{r}
+#| warning: false
+#| message: false
 
-##Data Loading and Setup
-```{python}
-# Setup and Data Loading
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from statsmodels.tsa.stattools import adfuller, acf, pacf
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.stats.diagnostic import acorr_ljungbox
-import pandas_datareader as pdr
-from scipy import stats
-import warnings
-warnings.filterwarnings('ignore')
+cat("Loading financial data...\n")
 
-# Set plotting style
-plt.style.use('default')
-sns.set_palette("husl")
+library(quantmod)
+library(tidyverse)
+library(zoo)
+library(forecast)
+library(tseries)
 
-print("="*70)
-print("ARIMA/SARIMA MODELING - HOMEWORK 3")
-print("="*70)
+start_date <- as.Date("2019-01-01")
+end_date   <- as.Date("2025-09-18")
 
-# Load data
-start_date = '2019-01-01'
-end_date = '2025-09-18'
+# Safe loader
 
-working_series = {
-    'SP500': 'SP500',
-    'VIX': 'VIXCLS', 
-    'Bitcoin': 'CBBTCUSD',
-    'CPI': 'CPIAUCSL'  # Consumer Price Index (Inflation)
+load_fred_data <- function(symbol) {
+tryCatch(
+getSymbols(symbol, src = "FRED", from = start_date, to = end_date,
+auto.assign = FALSE),
+error = function(e) { cat("FAILED:", symbol, "\n"); NULL }
+)
 }
 
-price_data = {}
-for name, code in working_series.items():
-    try:
-        data = pdr.get_data_fred(code, start_date, end_date)
-        if not data.empty:
-            price_data[name] = data.iloc[:, 0]
-            print(f"✓ Loaded {name}: {len(data)} observations")
-    except Exception as e:
-        print(f"✗ Failed to load {name}: {e}")
+# Load assets
 
-price_data = pd.DataFrame(price_data)
-price_data = price_data.dropna(how='all')
+sp500_data  <- load_fred_data("SP500")
+vix_data    <- load_fred_data("VIXCLS")
+btc_data    <- load_fred_data("CBBTCUSD")
+nasdaq_data <- load_fred_data("NASDAQCOM")
+usd_data    <- load_fred_data("DTWEXBGS")
 
-print(f"\nData Summary:")
-print(f"  Date range: {price_data.index[0]} to {price_data.index[-1]}")
-print(f"  Total observations: {len(price_data)}")
-print(f"  Assets loaded: {list(price_data.columns)}")
+# Merge only valid
+
+merge_list <- list(
+SP500   = sp500_data,
+VIX     = vix_data,
+Bitcoin = btc_data,
+NASDAQ  = nasdaq_data,
+USD     = usd_data
+)
+merge_list <- merge_list[!sapply(merge_list, is.null)]
+
+cat("Loaded:", names(merge_list), "\n")
+
+# Merge to zoo
+
+price_zoo <- do.call(merge.zoo, merge_list)
+
+# To dataframe
+
+price_data <- fortify.zoo(price_zoo)
+colnames(price_data) <- c("Date", names(merge_list))
+price_data <- price_data |> na.omit()
+
+cat(nrow(price_data), "rows loaded.\n")
+
+# Differenced data function
+
+get_series <- function(asset) price_data[[asset]]
+
+get_diff_series <- function(asset) {
+diff(log(price_data[[asset]])) |> na.omit()
+}
 ```
 
----
+```{r}
+#| warning: false
+#| message: false
 
-```{python}
-#  Check Stationarity with ADF Test
-def adf_test(series, name):
-    """Perform Augmented Dickey-Fuller test"""
-    result = adfuller(series.dropna(), autolag='AIC')
-    
-    print(f"\n{name}:")
-    print(f"  ADF Statistic: {result[0]:.4f}")
-    print(f"  p-value: {result[1]:.4f}")
-    print(f"  Critical Values:")
-    for key, value in result[4].items():
-        print(f"    {key}: {value:.3f}")
-    
-    if result[1] <= 0.05:
-        print(f"  ✓ STATIONARY (reject null hypothesis)")
-        return True
-    else:
-        print(f"  ✗ NON-STATIONARY (fail to reject null hypothesis)")
-        return False
+cat("Fitting ARIMA + SARIMA models ONCE per asset...\n")
 
-print("="*70)
-print("STATIONARITY TESTING - ORIGINAL SERIES")
-print("="*70)
+assets <- names(merge_list)
 
-# Test all four datasets
-stationarity_results = {}
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        stationarity_results[asset] = adf_test(data, asset)
+arima_models <- list()
+sarima_models <- list()
 
-print("\n" + "="*70)
-print("SUMMARY:")
-print("="*70)
-for asset, is_stationary in stationarity_results.items():
-    status = "Stationary ✓" if is_stationary else "Non-Stationary → Need Differencing"
-    print(f"  {asset}: {status}")
-```
+for (a in assets) {
+series <- get_diff_series(a)
+cat("  Fitting ARIMA for", a, "\n")
+arima_models[[a]] <- auto.arima(series, stepwise=TRUE, approximation=TRUE)
 
-
-
-## Differencing Non-Stationary Series
-
-
-```{python}
-# Apply First Differencing
-print("="*70)
-print("APPLYING FIRST DIFFERENCING")
-print("="*70)
-
-# Create differenced series
-differenced_data = {}
-diff_needed = {}
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in price_data.columns:
-        original = price_data[asset].dropna()
-        
-        if asset == 'VIX':
-            # VIX is already stationary - no differencing needed
-            differenced_data[asset] = original
-            diff_needed[asset] = 0
-            print(f"\n{asset}: Already stationary (d=0) - using original series")
-        else:
-            # Apply first differencing
-            diff = original.diff().dropna()
-            differenced_data[asset] = diff
-            diff_needed[asset] = 1
-            print(f"\n{asset}: Applied first differencing (d=1)")
-            print(f"  Original length: {len(original)}")
-            print(f"  Differenced length: {len(diff)}")
-
-# Convert to DataFrame for easier handling
-differenced_df = pd.DataFrame(differenced_data)
-
-print("\n" + "="*70)
-print("Differencing Summary:")
-for asset, d in diff_needed.items():
-    print(f"  {asset}: d = {d}")
-```
-```{python}
-# Plot original vs differenced series
-fig, axes = plt.subplots(4, 2, figsize=(15, 16))
-fig.suptitle('Original vs Differenced Series', fontsize=16, fontweight='bold')
-
-assets = ['Bitcoin', 'SP500', 'VIX', 'CPI']
-
-for i, asset in enumerate(assets):
-    if asset in price_data.columns:
-        # Original series
-        original = price_data[asset].dropna()
-        axes[i, 0].plot(original.index, original, linewidth=1.5, color='blue')
-        axes[i, 0].set_title(f'{asset} - Original Series')
-        axes[i, 0].set_ylabel('Level')
-        axes[i, 0].grid(True, alpha=0.3)
-        
-        # Differenced series
-        if asset in differenced_data:
-            diff_series = differenced_data[asset]
-            color = 'green' if asset == 'VIX' else 'orange'
-            axes[i, 1].plot(diff_series.index, diff_series, linewidth=1, color=color, alpha=0.7)
-            title_suffix = '(No Differencing - Already Stationary)' if asset == 'VIX' else '(First Difference)'
-            axes[i, 1].set_title(f'{asset} - {title_suffix}')
-            axes[i, 1].set_ylabel('Change' if asset != 'VIX' else 'Level')
-            axes[i, 1].grid(True, alpha=0.3)
-            axes[i, 1].axhline(y=0, color='red', linestyle='--', alpha=0.5)
-
-plt.tight_layout()
-plt.show()
-
-print("\nPlots show transformation from non-stationary to stationary series.")
-```
-
----
-
-## Verify Stationarity After Differencing
-
-
-```{python}
-# Test Stationarity of Differenced Series
-print("="*70)
-print("STATIONARITY TESTING - AFTER DIFFERENCING")
-print("="*70)
-
-differenced_stationary = {}
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in differenced_data:
-        series = differenced_data[asset].dropna()
-        result = adfuller(series, autolag='AIC')
-        
-        print(f"\n{asset} (d={diff_needed[asset]}):")
-        print(f"  ADF Statistic: {result[0]:.4f}")
-        print(f"  p-value: {result[1]:.4f}")
-        
-        if result[1] <= 0.05:
-            print(f"  ✓ STATIONARY - Ready for ARIMA modeling")
-            differenced_stationary[asset] = True
-        else:
-            print(f"  ✗ STILL NON-STATIONARY - May need second differencing")
-            differenced_stationary[asset] = False
-
-print("\n" + "="*70)
-print("FINAL STATIONARITY STATUS:")
-print("="*70)
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in differenced_stationary:
-        d_value = diff_needed[asset]
-        status = "✓ Stationary" if differenced_stationary[asset] else "✗ Need d=2"
-        print(f"  {asset}: d={d_value} → {status}")
-```
-
----
-
-## ACF and PACF Analysis
-
-
-```{python}
-#  ACF and PACF Plots
-fig, axes = plt.subplots(4, 2, figsize=(15, 16))
-fig.suptitle('ACF and PACF Plots for Model Identification', fontsize=16, fontweight='bold')
-
-assets = ['Bitcoin', 'SP500', 'VIX', 'CPI']
-
-for i, asset in enumerate(assets):
-    if asset in differenced_data:
-        series = differenced_data[asset].dropna()
-        
-        #
-        max_lags = min(40, len(series) // 2 - 1)
-        
-        # ACF plot
-        plot_acf(series, lags=max_lags, ax=axes[i, 0], alpha=0.05)
-        axes[i, 0].set_title(f'{asset} - ACF (d={diff_needed[asset]}, n={len(series)})')
-        axes[i, 0].set_xlabel('Lag')
-        axes[i, 0].set_ylabel('ACF')
-        
-        # PACF plot
-        plot_pacf(series, lags=max_lags, ax=axes[i, 1], alpha=0.05, method='ywm')
-        axes[i, 1].set_title(f'{asset} - PACF (d={diff_needed[asset]}, n={len(series)})')
-        axes[i, 1].set_xlabel('Lag')
-        axes[i, 1].set_ylabel('PACF')
-
-plt.tight_layout()
-plt.show()
-```
-```{python}
-# Analyze ACF/PACF patterns
-print("="*70)
-print("ACF/PACF INTERPRETATION FOR MODEL SELECTION")
-print("="*70)
-
-for asset in assets:
-    if asset in differenced_data:
-        series = differenced_data[asset].dropna()
-        
-        # Adjust lags for analysis
-        max_lags = min(20, len(series) // 2 - 1)
-        
-        # Calculate ACF and PACF values
-        acf_vals = acf(series, nlags=max_lags, fft=False)
-        pacf_vals = pacf(series, nlags=max_lags, method='ywm')
-        
-        # Count significant lags (beyond 95% confidence)
-        conf_interval = 1.96 / np.sqrt(len(series))
-        acf_sig = np.sum(np.abs(acf_vals[1:]) > conf_interval)
-        pacf_sig = np.sum(np.abs(pacf_vals[1:]) > conf_interval)
-        
-        print(f"\n{asset} (d={diff_needed[asset]}, n={len(series)}):")
-        print(f"  Significant ACF lags: {acf_sig} → suggests MA(q)")
-        print(f"  Significant PACF lags: {pacf_sig} → suggests AR(p)")
-        
-        # Suggest model orders
-        if acf_sig <= 2 and pacf_sig <= 2:
-            print(f"  → Suggested models: ARIMA({min(pacf_sig,2)},{diff_needed[asset]},{min(acf_sig,2)})")
-        else:
-            print(f"  → Complex pattern - try multiple combinations")
-```
-
-
-```{python}
-# Fit ARIMA Models with Different Orders
-from statsmodels.tsa.arima.model import ARIMA
-
-print("="*70)
-print("FITTING ARIMA MODELS")
-print("="*70)
-
-# Store results
-arima_results = {}
-
-# Define candidate models for each asset
-candidate_models = {
-    'Bitcoin': [(0,1,0), (1,1,0), (0,1,1), (1,1,1), (2,1,1), (1,1,2)],
-    'SP500': [(0,1,0), (1,1,0), (0,1,1), (1,1,1), (2,1,1), (1,1,2)],
-    'VIX': [(0,0,0), (1,0,0), (0,0,1), (1,0,1), (2,0,1), (1,0,2)],
-    'CPI': [(0,1,0), (1,1,0), (0,1,1), (1,1,1), (2,1,1), (1,1,2)]
+cat("  Fitting SARIMA for", a, "\n")
+sarima_models[[a]] <- auto.arima(series, seasonal=TRUE,
+stepwise=TRUE, approximation=TRUE)
 }
 
-for asset in assets:
-    if asset in price_data.columns:
-        print(f"\n{asset}:")
-        print("-" * 50)
-        
-        # Use original series for ARIMA (it handles differencing internally)
-        series = price_data[asset].dropna()
-        
-        asset_results = []
-        
-        for order in candidate_models[asset]:
-            try:
-                model = ARIMA(series, order=order)
-                fitted = model.fit()
-                
-                aic = fitted.aic
-                bic = fitted.bic
-                
-                print(f"  ARIMA{order}: AIC={aic:.2f}, BIC={bic:.2f}")
-                
-                asset_results.append({
-                    'order': order,
-                    'aic': aic,
-                    'bic': bic,
-                    'model': fitted
-                })
-            except Exception as e:
-                print(f"  ARIMA{order}: Failed - {str(e)[:50]}")
-        
-        # Find best model by AIC
-        if asset_results:
-            best_model = min(asset_results, key=lambda x: x['aic'])
-            print(f"\n  ✓ Best model (lowest AIC): ARIMA{best_model['order']}")
-            print(f"    AIC: {best_model['aic']:.2f}, BIC: {best_model['bic']:.2f}")
-            
-            arima_results[asset] = {
-                'all_models': asset_results,
-                'best': best_model
-            }
+cat("Model fitting complete.\n")
+
 ```
 
 ---
 
+## HELPER FUNCTIONS  
 
 
-```{python}
-# Display Model Equations
-print("="*70)
-print("BEST MODEL EQUATIONS")
-print("="*70)
+```{r}
+#| warning: false
+#| message: false
 
-equations = {
-    'Bitcoin': {
-        'order': (1, 1, 0),
-        'equation': 'ARIMA(1,1,0): ∇Y_t = φ₁∇Y_{t-1} + ε_t',
-        'description': 'AR(1) on first differences (random walk with drift)'
-    },
-    'SP500': {
-        'order': (1, 1, 2),
-        'equation': 'ARIMA(1,1,2): ∇Y_t = φ₁∇Y_{t-1} + ε_t + θ₁ε_{t-1} + θ₂ε_{t-2}',
-        'description': 'Mixed ARMA model on first differences'
-    },
-    'VIX': {
-        'order': (1, 0, 2),
-        'equation': 'ARIMA(1,0,2): Y_t = φ₁Y_{t-1} + ε_t + θ₁ε_{t-1} + θ₂ε_{t-2}',
-        'description': 'Mixed ARMA model on levels (no differencing needed)'
-    },
-    'CPI': {
-        'order': (1, 1, 2),
-        'equation': 'ARIMA(1,1,2): ∇Y_t = φ₁∇Y_{t-1} + ε_t + θ₁ε_{t-1} + θ₂ε_{t-2}',
-        'description': 'Mixed ARMA model on first differences'
-    }
+plot_original_and_diff <- function(asset) {
+par(mfrow=c(2,1))
+plot(price_data$Date, price_data[[asset]], type="l",
+main=paste(asset, "- Original"), col="steelblue")
+plot(get_diff_series(asset), type="l",
+main=paste(asset, "- First Difference"), col="red")
+par(mfrow=c(1,1))
 }
 
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in arima_results:
-        best = arima_results[asset]['best']
-        model = best['model']
-        
-        print(f"\n{asset} - ARIMA{best['order']}:")
-        print(f"  {equations[asset]['equation']}")
-        print(f"  Description: {equations[asset]['description']}")
-        print(f"\n  Estimated Parameters:")
-        
-        # Display parameter estimates
-        params = model.params
-        for param_name, param_value in params.items():
-            if 'ar' in param_name.lower() or 'ma' in param_name.lower():
-                print(f"    {param_name}: {param_value:.4f}")
-```
-
-```{python}
-# Model Diagnostics
-import matplotlib.pyplot as plt
-from scipy import stats
-
-print("="*70)
-print("MODEL DIAGNOSTICS")
-print("="*70)
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in arima_results:
-        print(f"\n{'='*70}")
-        print(f"{asset} - ARIMA{arima_results[asset]['best']['order']} DIAGNOSTICS")
-        print(f"{'='*70}")
-        
-        model = arima_results[asset]['best']['model']
-        residuals = model.resid
-        
-        # Create diagnostic plots
-        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-        fig.suptitle(f'{asset} - ARIMA{arima_results[asset]["best"]["order"]} Diagnostic Plots', 
-                     fontsize=14, fontweight='bold')
-        
-        # 1. Residuals over time
-        axes[0, 0].plot(residuals, linewidth=0.5)
-        axes[0, 0].axhline(y=0, color='r', linestyle='--', alpha=0.7)
-        axes[0, 0].set_title('Residuals Over Time')
-        axes[0, 0].set_xlabel('Time')
-        axes[0, 0].set_ylabel('Residuals')
-        axes[0, 0].grid(True, alpha=0.3)
-        
-        # 2. ACF of residuals
-        plot_acf(residuals.dropna(), lags=min(40, len(residuals)//2-1), ax=axes[0, 1], alpha=0.05)
-        axes[0, 1].set_title('ACF of Residuals')
-        
-        # 3. Q-Q plot
-        stats.probplot(residuals.dropna(), dist="norm", plot=axes[1, 0])
-        axes[1, 0].set_title('Q-Q Plot (Normal Distribution)')
-        axes[1, 0].grid(True, alpha=0.3)
-        
-        # 4. Histogram of residuals
-        axes[1, 1].hist(residuals.dropna(), bins=50, density=True, alpha=0.7, edgecolor='black')
-        
-        # Overlay normal distribution
-        mu, sigma = residuals.mean(), residuals.std()
-        x = np.linspace(residuals.min(), residuals.max(), 100)
-        axes[1, 1].plot(x, stats.norm.pdf(x, mu, sigma), 'r-', linewidth=2, label='Normal')
-        axes[1, 1].set_title('Histogram of Residuals')
-        axes[1, 1].set_xlabel('Residual Value')
-        axes[1, 1].set_ylabel('Density')
-        axes[1, 1].legend()
-        axes[1, 1].grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.show()
-        
-        # Statistical tests
-        print(f"\nStatistical Test Results:")
-        print(f"-" * 50)
-        
-        # Ljung-Box test for autocorrelation
-        lb_test = acorr_ljungbox(residuals.dropna(), lags=[10, 20], return_df=True)
-        print(f"\nLjung-Box Test (No Autocorrelation):")
-        print(f"  Lag 10: p-value = {lb_test['lb_pvalue'].iloc[0]:.4f}")
-        print(f"  Lag 20: p-value = {lb_test['lb_pvalue'].iloc[1]:.4f}")
-        if lb_test['lb_pvalue'].iloc[1] > 0.05:
-            print(f"  ✓ No significant autocorrelation (p > 0.05)")
-        else:
-            print(f"  ✗ Significant autocorrelation detected (p < 0.05)")
-        
-        # Normality test
-        jb_stat, jb_pvalue = stats.jarque_bera(residuals.dropna())
-        print(f"\nJarque-Bera Test (Normality):")
-        print(f"  Statistic: {jb_stat:.4f}")
-        print(f"  p-value: {jb_pvalue:.4f}")
-        if jb_pvalue > 0.05:
-            print(f"  ✓ Residuals are normally distributed (p > 0.05)")
-        else:
-            print(f"  ✗ Residuals deviate from normality (p < 0.05)")
-        
-        # Summary statistics
-        print(f"\nResidual Summary Statistics:")
-        print(f"  Mean: {residuals.mean():.6f}")
-        print(f"  Std Dev: {residuals.std():.4f}")
-        print(f"  Skewness: {stats.skew(residuals.dropna()):.4f}")
-        print(f"  Kurtosis: {stats.kurtosis(residuals.dropna()):.4f}")
-
-```
-
----
-
-## Compare with auto.arima()
-
-
-```{python}
-
-# mdarima if needed
-import subprocess
-import sys
-
-try:
-    from pmdarima import auto_arima
-except ImportError:
-    print("Installing pmdarima...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pmdarima", "-q"])
-    from pmdarima import auto_arima
-
-print("="*70)
-print("AUTO.ARIMA() COMPARISON")
-print("="*70)
-
-auto_arima_results = {}
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in price_data.columns:
-        print(f"\n{asset}:")
-        print("-" * 50)
-        
-        series = price_data[asset].dropna()
-        
-        # Run auto_arima
-        try:
-            auto_model = auto_arima(
-                series,
-                seasonal=False,
-                stepwise=True,
-                suppress_warnings=True,
-                error_action='ignore',
-                max_order=5,
-                information_criterion='aic'
-            )
-            
-            auto_order = auto_model.order
-            auto_aic = auto_model.aic()
-            
-            # Our manual best model
-            manual_order = arima_results[asset]['best']['order']
-            manual_aic = arima_results[asset]['best']['aic']
-            
-            print(f"  Manual Selection: ARIMA{manual_order}")
-            print(f"    AIC: {manual_aic:.2f}")
-            print(f"\n  auto.arima() Selection: ARIMA{auto_order}")
-            print(f"    AIC: {auto_aic:.2f}")
-            
-            # Compare
-            if auto_order == manual_order:
-                print(f"\n  ✓ SAME MODEL - Our selection matches auto.arima()")
-            else:
-                print(f"\n  ✗ DIFFERENT MODELS")
-                if auto_aic < manual_aic:
-                    print(f"    → auto.arima() found a better model (lower AIC)")
-                else:
-                    print(f"    → Our manual selection has lower AIC")
-            
-            auto_arima_results[asset] = {
-                'model': auto_model,
-                'order': auto_order,
-                'aic': auto_aic
-            }
-            
-        except Exception as e:
-            print(f"  Error: {str(e)[:100]}")
-
-print("\n" + "="*70)
-print("INTERPRETATION:")
-print("="*70)
-print("""
-auto.arima() uses a stepwise algorithm to search through model space.
-It may find different models than manual selection based on:
-  • Information criterion optimization (AIC/BIC)
-  • Automated parameter testing
-  • Different search strategies
-
-Manual selection based on ACF/PACF provides intuition but auto.arima()
-can be more thorough in exploring the model space.
-""")
-```
-
-```{python}
-# Forecasting
-print("="*70)
-print("FORECASTING WITH BEST MODELS")
-print("="*70)
-
-forecast_horizon = 30  # 30 steps ahead
-
-fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-fig.suptitle('ARIMA Model Forecasts (30 Steps Ahead)', fontsize=16, fontweight='bold')
-
-axes = axes.flatten()
-
-for idx, asset in enumerate(['Bitcoin', 'SP500', 'VIX', 'CPI']):
-    if asset in arima_results:
-        # Get original series and model
-        series = price_data[asset].dropna()
-        model = arima_results[asset]['best']['model']
-        
-        # Forecast
-        forecast = model.forecast(steps=forecast_horizon)
-        
-        # Get confidence intervals
-        forecast_df = model.get_forecast(steps=forecast_horizon)
-        forecast_ci = forecast_df.conf_int()
-        
-        # Create forecast index
-        if asset == 'CPI':
-            # Monthly data - use month frequency
-            forecast_index = pd.date_range(
-                start=series.index[-1], 
-                periods=forecast_horizon + 1, 
-                freq='MS'
-            )[1:]
-        else:
-            # Daily data
-            forecast_index = pd.date_range(
-                start=series.index[-1], 
-                periods=forecast_horizon + 1, 
-                freq='D'
-            )[1:]
-        
-        # Plot
-        # Historical data (last 200 points for clarity)
-        history_points = min(200, len(series))
-        axes[idx].plot(series.index[-history_points:], 
-                      series.iloc[-history_points:], 
-                      label='Historical', linewidth=2, color='blue')
-        
-        # Forecast
-        axes[idx].plot(forecast_index, forecast, 
-                      label='Forecast', linewidth=2, color='red', linestyle='--')
-        
-        # Confidence interval
-        axes[idx].fill_between(forecast_index, 
-                              forecast_ci.iloc[:, 0], 
-                              forecast_ci.iloc[:, 1], 
-                              alpha=0.3, color='red', label='95% CI')
-        
-        axes[idx].set_title(f'{asset} - ARIMA{arima_results[asset]["best"]["order"]}')
-        axes[idx].set_xlabel('Date')
-        axes[idx].set_ylabel('Value')
-        axes[idx].legend()
-        axes[idx].grid(True, alpha=0.3)
-        
-        # Print forecast summary
-        print(f"\n{asset} Forecast:")
-        print(f"  Current value: {series.iloc[-1]:.2f}")
-        print(f"  30-step forecast: {forecast.iloc[-1]:.2f}")
-        print(f"  Change: {((forecast.iloc[-1] / series.iloc[-1]) - 1) * 100:.2f}%")
-
-plt.tight_layout()
-plt.show()
-
-```
----
-
-### Compare ARIMA with Benchmark Methods
-
-Compare our ARIMA models to simple benchmark methods (Naive, Mean, Drift).
-```{python}
-
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-
-print("="*70)
-print("COMPARING ARIMA MODELS WITH BENCHMARK METHODS")
-print("="*70)
-
-def calculate_metrics(actual, predicted):
-    """Calculate forecast accuracy metrics"""
-    mae = mean_absolute_error(actual, predicted)
-    rmse = np.sqrt(mean_squared_error(actual, predicted))
-    mape = np.mean(np.abs((actual - predicted) / actual)) * 100
-    return {'MAE': mae, 'RMSE': rmse, 'MAPE': mape}
-
-# Split data: use last 30 points for testing
-test_size = 30
-
-benchmark_results = {}
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in price_data.columns:
-        print(f"\n{'='*70}")
-        print(f"{asset} - Model Comparison")
-        print(f"{'='*70}")
-        
-        series = price_data[asset].dropna()
-        
-        # Adjust test size for CPI (monthly data)
-        if asset == 'CPI':
-            test_size_adj = min(12, len(series) // 4)  # Use 12 months or 25% of data
-        else:
-            test_size_adj = test_size
-        
-        # Split data
-        train = series[:-test_size_adj]
-        test = series[-test_size_adj:]
-        
-        print(f"\nTrain size: {len(train)}, Test size: {len(test)}")
-        
-        # 1. ARIMA Model
-        arima_order = arima_results[asset]['best']['order']
-        arima_model = ARIMA(train, order=arima_order).fit()
-        arima_forecast = arima_model.forecast(steps=len(test))
-        arima_metrics = calculate_metrics(test, arima_forecast)
-        
-        # 2. Naive (last value)
-        naive_forecast = pd.Series([train.iloc[-1]] * len(test), index=test.index)
-        naive_metrics = calculate_metrics(test, naive_forecast)
-        
-        # 3. Mean
-        mean_forecast = pd.Series([train.mean()] * len(test), index=test.index)
-        mean_metrics = calculate_metrics(test, mean_forecast)
-        
-        # 4. Drift (linear trend)
-        drift_slope = (train.iloc[-1] - train.iloc[0]) / len(train)
-        drift_forecast = pd.Series(
-            [train.iloc[-1] + drift_slope * (i + 1) for i in range(len(test))],
-            index=test.index
-        )
-        drift_metrics = calculate_metrics(test, drift_forecast)
-        
-        # Store results
-        benchmark_results[asset] = {
-            'ARIMA': arima_metrics,
-            'Naive': naive_metrics,
-            'Mean': mean_metrics,
-            'Drift': drift_metrics
-        }
-        
-        # Display results
-        print(f"\nForecast Accuracy Metrics:")
-        print(f"{'Method':<15} {'MAE':<12} {'RMSE':<12} {'MAPE (%)':<12}")
-        print(f"{'-'*55}")
-        
-        for method in ['ARIMA', 'Naive', 'Mean', 'Drift']:
-            metrics = benchmark_results[asset][method]
-            print(f"{method:<15} {metrics['MAE']:<12.2f} {metrics['RMSE']:<12.2f} {metrics['MAPE']:<12.2f}")
-        
-        # Find best method
-        best_method = min(benchmark_results[asset].items(), 
-                         key=lambda x: x[1]['RMSE'])
-        print(f"\n✓ Best Method: {best_method[0]} (lowest RMSE)")
-```
-```{python}
-# Visualize benchmark comparison
-fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-fig.suptitle('ARIMA vs Benchmark Methods - Forecast Comparison', 
-             fontsize=16, fontweight='bold')
-
-axes = axes.flatten()
-
-for idx, asset in enumerate(['Bitcoin', 'SP500', 'VIX', 'CPI']):
-    if asset in price_data.columns:
-        series = price_data[asset].dropna()
-        
-        # Adjust test size
-        if asset == 'CPI':
-            test_size_adj = min(12, len(series) // 4)
-        else:
-            test_size_adj = 30
-        
-        train = series[:-test_size_adj]
-        test = series[-test_size_adj:]
-        
-        # Generate forecasts
-        arima_order = arima_results[asset]['best']['order']
-        arima_model = ARIMA(train, order=arima_order).fit()
-        arima_forecast = arima_model.forecast(steps=len(test))
-        
-        naive_forecast = pd.Series([train.iloc[-1]] * len(test), index=test.index)
-        drift_slope = (train.iloc[-1] - train.iloc[0]) / len(train)
-        drift_forecast = pd.Series(
-            [train.iloc[-1] + drift_slope * (i + 1) for i in range(len(test))],
-            index=test.index
-        )
-        
-        # Plot
-        # Historical (last 100 points)
-        history_points = min(100, len(train))
-        axes[idx].plot(train.index[-history_points:], train.iloc[-history_points:], 
-                      label='Train', linewidth=2, color='blue', alpha=0.7)
-        
-        # Test data
-        axes[idx].plot(test.index, test, label='Test (Actual)', 
-                      linewidth=2, color='black', marker='o', markersize=3)
-        
-        # Forecasts
-        axes[idx].plot(test.index, arima_forecast, label=f'ARIMA{arima_order}', 
-                      linewidth=2, color='red', linestyle='--')
-        axes[idx].plot(test.index, naive_forecast, label='Naive', 
-                      linewidth=1.5, color='green', linestyle='--', alpha=0.7)
-        axes[idx].plot(test.index, drift_forecast, label='Drift', 
-                      linewidth=1.5, color='orange', linestyle='--', alpha=0.7)
-        
-        axes[idx].set_title(f'{asset} - Forecast Comparison')
-        axes[idx].set_xlabel('Date')
-        axes[idx].set_ylabel('Value')
-        axes[idx].legend(fontsize=8)
-        axes[idx].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-```
-```{python}
-# Summary comparison across all assets
-print("\n" + "="*70)
-print("SUMMARY: ARIMA vs BENCHMARKS")
-print("="*70)
-
-comparison_summary = []
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in benchmark_results:
-        arima_rmse = benchmark_results[asset]['ARIMA']['RMSE']
-        naive_rmse = benchmark_results[asset]['Naive']['RMSE']
-        
-        improvement = ((naive_rmse - arima_rmse) / naive_rmse) * 100
-        
-        comparison_summary.append({
-            'Asset': asset,
-            'ARIMA_RMSE': arima_rmse,
-            'Naive_RMSE': naive_rmse,
-            'Improvement (%)': improvement
-        })
-
-comparison_df = pd.DataFrame(comparison_summary)
-print("\n", comparison_df.to_string(index=False))
-
-print("\n" + "="*70)
-print("KEY INSIGHTS:")
-print("="*70)
-print("""
-- ARIMA models generally outperform naive benchmarks for financial data
-- Positive improvement % means ARIMA is better than naive forecast
-- Financial markets are difficult to forecast - even small improvements matter
-- VIX (volatility) is particularly challenging to forecast
-- Drift method works well for trending series (CPI, Bitcoin)
-""")
-```
-
----
-
-# SARIMA Models
-
-## Checking for Seasonality
-
-```{python}
-# Seasonality Detection
-from statsmodels.tsa.seasonal import seasonal_decompose
-
-print("="*70)
-print("SEASONALITY DETECTION")
-print("="*70)
-
-seasonality_detected = {}
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in price_data.columns:
-        print(f"\n{asset}:")
-        print("-" * 50)
-        
-        series = price_data[asset].dropna()
-        
-        # Determine appropriate seasonal period
-        if asset == 'CPI':
-            seasonal_period = 12  # Monthly data - yearly seasonality
-        else:
-            # Daily data - check for weekly (7), monthly (30), quarterly (90) patterns
-            seasonal_period = 7  # Start with weekly
-        
-        # Check ACF at seasonal lags
-        acf_vals = acf(differenced_data[asset].dropna(), nlags=min(100, len(series)//2-1), fft=False)
-        
-        # Look for significant spikes at seasonal lags
-        if asset == 'CPI':
-            seasonal_lags = [12, 24, 36]  # 1, 2, 3 years
-        else:
-            seasonal_lags = [7, 14, 21, 30, 60, 90]  # weekly, monthly, quarterly
-        
-        significant_seasonal = []
-        conf_interval = 1.96 / np.sqrt(len(series))
-        
-        for lag in seasonal_lags:
-            if lag < len(acf_vals):
-                if np.abs(acf_vals[lag]) > conf_interval:
-                    significant_seasonal.append((lag, acf_vals[lag]))
-        
-        print(f"  Checking seasonal periods: {seasonal_lags}")
-        print(f"  Significant seasonal lags found: {len(significant_seasonal)}")
-        
-        if significant_seasonal:
-            print(f"  Notable seasonal spikes:")
-            for lag, val in significant_seasonal[:3]:  # Show top 3
-                print(f"    Lag {lag}: ACF = {val:.3f}")
-            seasonality_detected[asset] = True
-            seasonal_period_final = significant_seasonal[0][0]
-        else:
-            print(f"  No strong seasonal pattern detected")
-            seasonality_detected[asset] = False
-            seasonal_period_final = seasonal_period
-
-print("\n" + "="*70)
-print("SEASONALITY SUMMARY:")
-print("="*70)
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in seasonality_detected:
-        status = "✓ Seasonal" if seasonality_detected[asset] else "✗ No seasonality"
-        print(f"  {asset}: {status}")
-```
-```{python}
-# Visual seasonality check with decomposition
-fig, axes = plt.subplots(4, 1, figsize=(15, 16))
-fig.suptitle('Seasonal Decomposition Analysis', fontsize=16, fontweight='bold')
-
-for idx, asset in enumerate(['Bitcoin', 'SP500', 'VIX', 'CPI']):
-    if asset in price_data.columns:
-        series = price_data[asset].dropna()
-        
-        # Determine period
-        if asset == 'CPI':
-            period = 12
-        else:
-            period = 30  # Monthly pattern for daily data
-        
-        # Only decompose if we have enough data
-        if len(series) >= 2 * period:
-            try:
-                decomposition = seasonal_decompose(series, model='additive', period=period, extrapolate_trend='freq')
-                
-                # Plot only the seasonal component
-                axes[idx].plot(decomposition.seasonal.index, decomposition.seasonal, 
-                              linewidth=1, color='green', alpha=0.8)
-                axes[idx].set_title(f'{asset} - Seasonal Component (period={period})')
-                axes[idx].set_ylabel('Seasonal')
-                axes[idx].grid(True, alpha=0.3)
-                axes[idx].axhline(y=0, color='red', linestyle='--', alpha=0.5)
-                
-                # Calculate seasonal strength
-                seasonal_var = np.var(decomposition.seasonal.dropna())
-                residual_var = np.var(decomposition.resid.dropna())
-                
-                if seasonal_var + residual_var > 0:
-                    seasonal_strength = seasonal_var / (seasonal_var + residual_var)
-                    axes[idx].text(0.02, 0.95, f'Seasonal Strength: {seasonal_strength:.3f}', 
-                                  transform=axes[idx].transAxes, fontsize=10,
-                                  bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-            except:
-                axes[idx].text(0.5, 0.5, 'Decomposition failed - insufficient data or no pattern', 
-                              ha='center', va='center', transform=axes[idx].transAxes)
-                axes[idx].set_title(f'{asset} - Seasonal Component')
-
-plt.tight_layout()
-plt.show()
-
-print("\nSeasonal Strength Interpretation:")
-print("  < 0.1: Very weak or no seasonality")
-print("  0.1-0.3: Weak seasonality")
-print("  0.3-0.6: Moderate seasonality")
-print("  > 0.6: Strong seasonality")
-```
-
----
-
-## Step 13: Fit SARIMA Models
-
-Based on seasonality detection, let's fit SARIMA models with appropriate seasonal periods.
-```{python}
-#  SARIMA Models
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-
-print("="*70)
-print("FITTING SARIMA MODELS")
-print("="*70)
-
-# Define seasonal periods based on our analysis
-seasonal_periods = {
-    'Bitcoin': 7,   # Weekly pattern (weak)
-    'SP500': 7,     # Weekly pattern (weak)
-    'VIX': 7,       # Weekly pattern (strong)
-    'CPI': 12       # Yearly pattern (monthly data)
+run_stationarity <- function(asset) {
+print(adf.test(get_diff_series(asset)))
 }
 
-# Define candidate SARIMA models
-sarima_candidates = {
-    'Bitcoin': [
-        ((1,1,0), (1,0,0,7)),  # ARIMA(1,1,0) + seasonal AR
-        ((1,1,0), (0,0,1,7)),  # ARIMA(1,1,0) + seasonal MA
-        ((1,1,0), (1,0,1,7))   # ARIMA(1,1,0) + seasonal ARMA
-    ],
-    'SP500': [
-        ((1,1,2), (1,0,0,7)),
-        ((1,1,2), (0,0,1,7)),
-        ((1,1,2), (1,0,1,7))
-    ],
-    'VIX': [
-        ((1,0,2), (1,0,0,7)),  # Strong weekly pattern
-        ((1,0,2), (0,0,1,7)),
-        ((1,0,2), (1,0,1,7))
-    ],
-    'CPI': [
-        ((1,1,2), (1,0,0,12)),
-        ((1,1,2), (0,0,1,12)),
-        ((1,1,2), (1,0,1,12))
-    ]
+plot_acf_pacf <- function(asset) {
+series <- get_diff_series(asset)
+par(mfrow=c(1,2))
+acf(series, main=paste(asset,"ACF"))
+pacf(series, main=paste(asset,"PACF"))
+par(mfrow=c(1,1))
 }
 
-sarima_results = {}
+run_arima_models <- function(asset) {
+print(arima_models[[asset]])
+}
 
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in price_data.columns:
-        print(f"\n{asset} (Seasonal period: {seasonal_periods[asset]}):")
-        print("-" * 60)
-        
-        series = price_data[asset].dropna()
-        asset_results = []
-        
-        for (order, seasonal_order) in sarima_candidates[asset]:
-            try:
-                model = SARIMAX(series, order=order, seasonal_order=seasonal_order,
-                               enforce_stationarity=False, enforce_invertibility=False)
-                fitted = model.fit(disp=False, maxiter=200)
-                
-                aic = fitted.aic
-                bic = fitted.bic
-                
-                print(f"  SARIMA{order}x{seasonal_order}: AIC={aic:.2f}, BIC={bic:.2f}")
-                
-                asset_results.append({
-                    'order': order,
-                    'seasonal_order': seasonal_order,
-                    'aic': aic,
-                    'bic': bic,
-                    'model': fitted
-                })
-            except Exception as e:
-                print(f"  SARIMA{order}x{seasonal_order}: Failed - {str(e)[:60]}")
-        
-        if asset_results:
-            best_sarima = min(asset_results, key=lambda x: x['aic'])
-            print(f"\n  ✓ Best SARIMA: {best_sarima['order']}x{best_sarima['seasonal_order']}")
-            print(f"    AIC: {best_sarima['aic']:.2f}, BIC: {best_sarima['bic']:.2f}")
-            
-            # Compare with ARIMA
-            arima_aic = arima_results[asset]['best']['aic']
-            improvement = arima_aic - best_sarima['aic']
-            
-            print(f"\n  Comparison with ARIMA:")
-            print(f"    ARIMA AIC: {arima_aic:.2f}")
-            print(f"    SARIMA AIC: {best_sarima['aic']:.2f}")
-            print(f"    Improvement: {improvement:.2f}")
-            
-            if improvement > 2:  # AIC improvement > 2 is considered meaningful
-                print(f"    ✓ SARIMA significantly better")
-            else:
-                print(f"    → Marginal difference - ARIMA sufficient")
-            
-            sarima_results[asset] = {
-                'all_models': asset_results,
-                'best': best_sarima
-            }
+run_arima_diagnostics <- function(asset) {
+tsdiag(arima_models[[asset]])
+}
 
-print("\n" + "="*70)
-print("SARIMA MODELING SUMMARY")
-print("="*70)
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in sarima_results:
-        best = sarima_results[asset]['best']
-        arima_aic = arima_results[asset]['best']['aic']
-        improvement = arima_aic - best['aic']
-        
-        print(f"\n{asset}:")
-        print(f"  Best SARIMA: {best['order']}x{best['seasonal_order']}")
-        print(f"  AIC Improvement over ARIMA: {improvement:.2f}")
-```
+forecast_arima_asset <- function(asset) {
+plot(forecast(arima_models[[asset]], h=30),
+main=paste(asset,"ARIMA Forecast"))
+}
 
-```{python}
-# SARIMA Forecasting
-print("="*70)
-print("SARIMA FORECASTING")
-print("="*70)
+compare_benchmarks <- function(asset) {
+s <- get_diff_series(asset)
+list(
+naive = naive(s, h=30),
+snaive = snaive(s, h=30),
+arima = forecast(arima_models[[asset]], h=30)
+)
+}
 
-fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-fig.suptitle('SARIMA Model Forecasts', fontsize=16, fontweight='bold')
-axes = axes.flatten()
+run_sarima_models <- function(asset) {
+print(sarima_models[[asset]])
+}
 
-forecast_horizon = 30
+forecast_sarima_asset <- function(asset) {
+plot(forecast(sarima_models[[asset]], h=30),
+main=paste(asset,"SARIMA Forecast"))
+}
 
-for idx, asset in enumerate(['Bitcoin', 'SP500', 'VIX', 'CPI']):
-    if asset in sarima_results:
-        series = price_data[asset].dropna()
-        model = sarima_results[asset]['best']['model']
-        
-        # Forecast
-        forecast = model.forecast(steps=forecast_horizon)
-        forecast_obj = model.get_forecast(steps=forecast_horizon)
-        forecast_ci = forecast_obj.conf_int()
-        
-        # Create forecast index
-        if asset == 'CPI':
-            forecast_index = pd.date_range(start=series.index[-1], 
-                                          periods=forecast_horizon + 1, freq='MS')[1:]
-        else:
-            forecast_index = pd.date_range(start=series.index[-1], 
-                                          periods=forecast_horizon + 1, freq='D')[1:]
-        
-        # Plot historical (last 200 points)
-        history_points = min(200, len(series))
-        axes[idx].plot(series.index[-history_points:], 
-                      series.iloc[-history_points:], 
-                      label='Historical', linewidth=2, color='blue')
-        
-        # Plot forecast
-        axes[idx].plot(forecast_index, forecast, 
-                      label='SARIMA Forecast', linewidth=2, color='red', linestyle='--')
-        
-        # Confidence interval
-        axes[idx].fill_between(forecast_index, 
-                              forecast_ci.iloc[:, 0], 
-                              forecast_ci.iloc[:, 1], 
-                              alpha=0.3, color='red', label='95% CI')
-        
-        seasonal_order = sarima_results[asset]['best']['seasonal_order']
-        axes[idx].set_title(f'{asset} - SARIMA{sarima_results[asset]["best"]["order"]}x{seasonal_order}')
-        axes[idx].set_xlabel('Date')
-        axes[idx].set_ylabel('Value')
-        axes[idx].legend()
-        axes[idx].grid(True, alpha=0.3)
-        
-        print(f"\n{asset} SARIMA Forecast:")
-        print(f"  Current: {series.iloc[-1]:.2f}")
-        print(f"  30-step forecast: {forecast.iloc[-1]:.2f}")
-        print(f"  Change: {((forecast.iloc[-1] / series.iloc[-1]) - 1) * 100:.2f}%")
+seasonality_analysis <- function(asset) {
+s <- ts(get_diff_series(asset), frequency=365)
+plot(stl(s, "periodic"), main=paste(asset,"Seasonality"))
+}
 
-plt.tight_layout()
-plt.show()
+# FAST CV — no repeated auto.arima calls
+
+cross_validate_sarima <- function(asset) {
+series <- ts(get_diff_series(asset))
+model <- sarima_models[[asset]]
+ffun <- function(y, h) forecast(model, h=h)
+e <- tsCV(series, ffun, h=1)
+mean(e^2, na.rm=TRUE)
+}
 
 ```
 
----
 
-## Step 15: Compare SARIMA with Benchmarks
 
-Let's compare SARIMA performance against the benchmark methods.
-```{python}
-# Step 15: SARIMA vs Benchmarks
-print("="*70)
-print("SARIMA vs BENCHMARK COMPARISON")
-print("="*70)
+## Univariate Time Series Analysis
 
-test_size = 30
-sarima_benchmark_results = {}
+### Bitcoin
 
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in sarima_results:
-        print(f"\n{'='*70}")
-        print(f"{asset}")
-        print(f"{'='*70}")
-        
-        series = price_data[asset].dropna()
-        
-        # Adjust test size
-        if asset == 'CPI':
-            test_size_adj = min(12, len(series) // 4)
-        else:
-            test_size_adj = test_size
-        
-        train = series[:-test_size_adj]
-        test = series[-test_size_adj:]
-        
-        # Fit SARIMA on training data
-        best_order = sarima_results[asset]['best']['order']
-        best_seasonal = sarima_results[asset]['best']['seasonal_order']
-        
-        sarima_model = SARIMAX(train, order=best_order, seasonal_order=best_seasonal,
-                              enforce_stationarity=False, enforce_invertibility=False).fit(disp=False)
-        sarima_forecast = sarima_model.forecast(steps=len(test))
-        sarima_metrics = calculate_metrics(test, sarima_forecast)
-        
-        # Benchmarks (reuse from before)
-        naive_forecast = pd.Series([train.iloc[-1]] * len(test), index=test.index)
-        naive_metrics = calculate_metrics(test, naive_forecast)
-        
-        drift_slope = (train.iloc[-1] - train.iloc[0]) / len(train)
-        drift_forecast = pd.Series(
-            [train.iloc[-1] + drift_slope * (i + 1) for i in range(len(test))],
-            index=test.index
-        )
-        drift_metrics = calculate_metrics(test, drift_forecast)
-        
-        # Get ARIMA metrics from earlier
-        arima_metrics = benchmark_results[asset]['ARIMA']
-        
-        sarima_benchmark_results[asset] = {
-            'SARIMA': sarima_metrics,
-            'ARIMA': arima_metrics,
-            'Naive': naive_metrics,
-            'Drift': drift_metrics
-        }
-        
-        # Display
-        print(f"\nForecast Accuracy (Test Size: {len(test)}):")
-        print(f"{'Method':<15} {'MAE':<12} {'RMSE':<12} {'MAPE (%)':<12}")
-        print(f"{'-'*55}")
-        
-        for method in ['SARIMA', 'ARIMA', 'Naive', 'Drift']:
-            metrics = sarima_benchmark_results[asset][method]
-            print(f"{method:<15} {metrics['MAE']:<12.2f} {metrics['RMSE']:<12.2f} {metrics['MAPE']:<12.2f}")
-        
-        # Find improvements
-        arima_rmse = arima_metrics['RMSE']
-        sarima_rmse = sarima_metrics['RMSE']
-        improvement = ((arima_rmse - sarima_rmse) / arima_rmse) * 100
-        
-        print(f"\n✓ SARIMA vs ARIMA improvement: {improvement:.2f}%")
+::: {.panel-tabset}
 
-# Summary table
-print("\n" + "="*70)
-print("OVERALL COMPARISON SUMMARY")
-print("="*70)
-
-summary_data = []
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in sarima_benchmark_results:
-        sarima_rmse = sarima_benchmark_results[asset]['SARIMA']['RMSE']
-        arima_rmse = sarima_benchmark_results[asset]['ARIMA']['RMSE']
-        naive_rmse = sarima_benchmark_results[asset]['Naive']['RMSE']
-        
-        summary_data.append({
-            'Asset': asset,
-            'SARIMA': sarima_rmse,
-            'ARIMA': arima_rmse,
-            'Naive': naive_rmse,
-            'SARIMA_Improvement': ((arima_rmse - sarima_rmse) / arima_rmse) * 100
-        })
-
-summary_df = pd.DataFrame(summary_data)
-print("\n", summary_df.to_string(index=False))
-
-print("\n" + "="*70)
-print("KEY FINDINGS:")
-print("="*70)
-print("""
-SARIMA models show consistent improvements over basic ARIMA
-Seasonal patterns (especially weekly for financial data) are meaningful
-VIX shows strong weekly seasonality - SARIMA captures this well
-Even weak seasonal patterns provide forecasting improvements
-For trending series (CPI), seasonal adjustment helps long-term forecasts
-""")
+#### 1. Time Series + First Difference
+```{r}
+plot_original_and_diff("Bitcoin")
 ```
 
-```{python}
-# Seasonal Cross-Validation
-print("="*70)
-print("SEASONAL CROSS-VALIDATION")
-print("="*70)
-
-cv_results = {}
-
-for asset in ['Bitcoin', 'SP500', 'VIX', 'CPI']:
-    if asset in sarima_results:
-        print(f"\n{'='*70}")
-        print(f"{asset} - Cross-Validation")
-        print(f"{'='*70}")
-        
-        series = price_data[asset].dropna()
-        s = seasonal_periods[asset]  # Seasonal period
-        
-        # Adjust for data size
-        if asset == 'CPI':
-            n_splits = 5
-            initial_train_size = 50
-        else:
-            n_splits = 10
-            initial_train_size = len(series) - 100
-        
-        best_order = sarima_results[asset]['best']['order']
-        best_seasonal = sarima_results[asset]['best']['seasonal_order']
-        
-        # 1-step ahead CV
-        errors_1step = []
-        
-        for i in range(n_splits):
-            train_end = initial_train_size + i * (s if asset == 'CPI' else 5)
-            
-            if train_end + 1 >= len(series):
-                break
-            
-            train = series[:train_end]
-            test_point = series.iloc[train_end]
-            
-            try:
-                model = SARIMAX(train, order=best_order, seasonal_order=best_seasonal,
-                               enforce_stationarity=False, enforce_invertibility=False)
-                fitted = model.fit(disp=False, maxiter=50)
-                forecast = fitted.forecast(steps=1).iloc[0]
-                error = test_point - forecast
-                errors_1step.append(error)
-            except:
-                pass
-        
-        # s-step ahead CV
-        errors_s_step = []
-        
-        for i in range(n_splits):
-            train_end = initial_train_size + i * (s if asset == 'CPI' else 5)
-            
-            if train_end + s >= len(series):
-                break
-            
-            train = series[:train_end]
-            test_point = series.iloc[train_end + s - 1]
-            
-            try:
-                model = SARIMAX(train, order=best_order, seasonal_order=best_seasonal,
-                               enforce_stationarity=False, enforce_invertibility=False)
-                fitted = model.fit(disp=False, maxiter=50)
-                forecast = fitted.forecast(steps=s).iloc[-1]
-                error = test_point - forecast
-                errors_s_step.append(error)
-            except:
-                pass
-        
-        # Calculate metrics
-        if errors_1step:
-            mae_1step = np.mean(np.abs(errors_1step))
-            rmse_1step = np.sqrt(np.mean(np.square(errors_1step)))
-        else:
-            mae_1step, rmse_1step = np.nan, np.nan
-        
-        if errors_s_step:
-            mae_s_step = np.mean(np.abs(errors_s_step))
-            rmse_s_step = np.sqrt(np.mean(np.square(errors_s_step)))
-        else:
-            mae_s_step, rmse_s_step = np.nan, np.nan
-        
-        cv_results[asset] = {
-            '1-step': {'mae': mae_1step, 'rmse': rmse_1step, 'n': len(errors_1step)},
-            f'{s}-step': {'mae': mae_s_step, 'rmse': rmse_s_step, 'n': len(errors_s_step)}
-        }
-        
-        print(f"\n1-Step Ahead Forecast (n={len(errors_1step)} folds):")
-        print(f"  MAE: {mae_1step:.2f}")
-        print(f"  RMSE: {rmse_1step:.2f}")
-        
-        print(f"\n{s}-Step Ahead Forecast (n={len(errors_s_step)} folds):")
-        print(f"  MAE: {mae_s_step:.2f}")
-        print(f"  RMSE: {rmse_s_step:.2f}")
-        
-        if not np.isnan(rmse_1step) and not np.isnan(rmse_s_step):
-            degradation = ((rmse_s_step - rmse_1step) / rmse_1step) * 100
-            print(f"\nForecast degradation: {degradation:.1f}% (from 1-step to {s}-step)")
-
-print("\n" + "="*70)
-print("CROSS-VALIDATION SUMMARY")
-print("="*70)
-print("""
-Cross-validation shows:
-- 1-step forecasts are most accurate (shortest horizon)
-- Forecast accuracy degrades as horizon increases
-- Seasonal models maintain better accuracy over seasonal periods
-- VIX shows highest degradation (high volatility)
-- CPI shows lowest degradation (smooth, trending series)
-""")
-
+#### 2. Stationarity
+```{r}
+run_stationarity("Bitcoin")
 ```
 
----
-
-## Final Summary: ARIMA/SARIMA Modeling Results
-```{python}
-# Summary
-print("="*70)
-print("HOMEWORK 3 COMPLETE - FINAL SUMMARY")
-print("="*70)
-
-print("\n" + "="*70)
-print("1. DATA STATIONARITY RESULTS")
-print("="*70)
-
-stationarity_summary = pd.DataFrame({
-    'Asset': ['Bitcoin', 'SP500', 'VIX', 'CPI'],
-    'Original Series': ['Non-Stationary', 'Non-Stationary', 'Stationary', 'Non-Stationary'],
-    'Differencing (d)': [1, 1, 0, 1],
-    'After Differencing': ['Stationary', 'Stationary', 'Stationary', 'Stationary']
-})
-
-print("\n", stationarity_summary.to_string(index=False))
-
-print("\n" + "="*70)
-print("2. BEST ARIMA MODELS")
-print("="*70)
-
-arima_summary = pd.DataFrame({
-    'Asset': ['Bitcoin', 'SP500', 'VIX', 'CPI'],
-    'Best ARIMA': ['(1,1,0)', '(1,1,2)', '(1,0,2)', '(1,1,2)'],
-    'AIC': [42255.51, 17897.87, 7350.92, 176.00],
-    'Diagnostics': ['Some autocorr', 'Good', 'Some autocorr', 'Good']
-})
-
-print("\n", arima_summary.to_string(index=False))
-
-print("\n" + "="*70)
-print("3. BEST SARIMA MODELS")
-print("="*70)
-
-sarima_summary = pd.DataFrame({
-    'Asset': ['Bitcoin', 'SP500', 'VIX', 'CPI'],
-    'Best SARIMA': ['(1,1,0)x(0,0,1,7)', '(1,1,2)x(0,0,1,7)', '(1,0,2)x(0,0,1,7)', '(1,1,2)x(1,0,1,12)'],
-    'AIC': [42127.31, 17792.58, 7332.90, 154.28],
-    'AIC Improvement': [128.20, 105.28, 18.02, 21.71],
-    'Seasonal Period': [7, 7, 7, 12]
-})
-
-print("\n", sarima_summary.to_string(index=False))
-
-print("\n" + "="*70)
-print("4. FORECASTING PERFORMANCE")
-print("="*70)
-
-forecast_summary = pd.DataFrame({
-    'Asset': ['Bitcoin', 'SP500', 'VIX', 'CPI'],
-    'ARIMA RMSE': [3050.99, 158.03, 2.73, 2.09],
-    'SARIMA RMSE': [3068.65, 161.02, 0.98, 2.05],
-    'Best Method': ['ARIMA', 'Drift', 'SARIMA', 'Drift'],
-    'SARIMA Improvement': ['-0.58%', '-1.89%', '+64.01%', '+2.03%']
-})
-
-print("\n", forecast_summary.to_string(index=False))
-
-print("\n" + "="*70)
-print("5. KEY INSIGHTS")
-print("="*70)
-
-insights = """
-STATIONARITY:
-  • Bitcoin, SP500, and CPI required first differencing (d=1)
-  • VIX was already stationary (d=0) - volatility mean-reverts
-  • All series became stationary after appropriate transformations
-
-MODEL SELECTION:
-  • Manual ACF/PACF analysis identified reasonable model orders
-  • auto.arima() found better models for SP500 and CPI (lower AIC)
-  • Both approaches converged on similar model structures
-
-SEASONALITY:
-  • Strong weekly seasonality detected in VIX (fear gauge)
-  • Weak weekly patterns in Bitcoin and SP500
-  • Yearly seasonality in CPI (monthly data)
-  • SARIMA models showed significant AIC improvements (18-128 points)
-
-FORECASTING:
-  • VIX: SARIMA significantly better (64% improvement) - captures weekly cycles
-  • Bitcoin/SP500: ARIMA and SARIMA comparable - weak seasonality
-  • CPI: Both models good, but Drift performs best (strong trend)
-  • Forecast accuracy degrades 99-130% from 1-step to 7-step ahead
-
-MODEL DIAGNOSTICS:
-  • SP500 and CPI residuals showed no autocorrelation (good models)
-  • Bitcoin and VIX had some remaining autocorrelation (could improve)
-  • All models showed non-normal residuals (fat tails) - expected in financial data
-  • This suggests need for GARCH models to capture volatility clustering
-
-PRACTICAL IMPLICATIONS:
-  • Short-term forecasts (1-7 days) are reasonably accurate
-  • Longer forecasts have high uncertainty (wide confidence intervals)
-  • Seasonal patterns matter for volatility (VIX) more than price levels
-  • Simple drift/trend models often competitive for strongly trending assets
-"""
-
-print(insights)
-
-
-
+#### 3. ACF & PACF
+```{r}
+plot_acf_pacf("Bitcoin")
 ```
+
+#### 4. ARIMA
+```{r}
+run_arima_models("Bitcoin")
+```
+
+#### 5. Diagnostics
+```{r}
+run_arima_diagnostics("Bitcoin")
+```
+
+#### 6. Forecast
+```{r}
+forecast_arima_asset("Bitcoin")
+```
+
+#### 7. Benchmarks
+```{r}
+compare_benchmarks("Bitcoin")
+```
+
+#### 8. SARIMA
+```{r}
+run_sarima_models("Bitcoin")
+```
+
+#### 9. SARIMA Forecast
+```{r}
+forecast_sarima_asset("Bitcoin")
+```
+
+#### 10. Seasonality
+```{r}
+seasonality_analysis("Bitcoin")
+```
+
+#### 11. Cross Validation
+```{r}
+cross_validate_sarima("Bitcoin")
+```
+
+:::
+
+
+
+### S&P 500
+
+::: {.panel-tabset}
+
+#### 1. Time Series + First Difference
+```{r}
+plot_original_and_diff("SP500")
+```
+
+#### 2. Stationarity
+```{r}
+run_stationarity("SP500")
+```
+
+#### 3. ACF & PACF
+```{r}
+plot_acf_pacf("SP500")
+```
+
+#### 4. ARIMA
+```{r}
+run_arima_models("SP500")
+```
+
+#### 5. Diagnostics
+```{r}
+run_arima_diagnostics("SP500")
+```
+
+#### 6. Forecast
+```{r}
+forecast_arima_asset("SP500")
+```
+
+#### 7. Benchmarks
+```{r}
+compare_benchmarks("SP500")
+```
+
+#### 8. SARIMA
+```{r}
+run_sarima_models("SP500")
+```
+
+#### 9. SARIMA Forecast
+```{r}
+forecast_sarima_asset("SP500")
+```
+
+#### 10. Seasonality
+```{r}
+seasonality_analysis("SP500")
+```
+
+#### 11. Cross Validation
+```{r}
+cross_validate_sarima("SP500")
+```
+:::
+
+### NASDAQ
+::: {.panel-tabset}
+
+#### 1. Time Series + First Difference
+```{r}
+plot_original_and_diff("NASDAQ")
+```
+
+#### 2. Stationarity
+```{r}
+run_stationarity("NASDAQ")
+```
+
+#### 3. ACF & PACF
+```{r}
+plot_acf_pacf("NASDAQ")
+```
+
+#### 4. ARIMA
+```{r}
+run_arima_models("NASDAQ")
+```
+
+#### 5. Diagnostics
+```{r}
+run_arima_diagnostics("NASDAQ")
+```
+
+#### 6. Forecast
+```{r}
+forecast_arima_asset("NASDAQ")
+```
+
+#### 7. Benchmarks
+```{r}
+compare_benchmarks("NASDAQ")
+```
+
+#### 8. SARIMA
+```{r}
+run_sarima_models("NASDAQ")
+```
+
+#### 9. SARIMA Forecast
+```{r}
+forecast_sarima_asset("NASDAQ")
+```
+
+#### 10. Seasonality
+```{r}
+seasonality_analysis("NASDAQ")
+```
+
+#### 11. Cross Validation
+```{r}
+cross_validate_sarima("NASDAQ")
+```
+:::
+
+
+### VIX
+::: {.panel-tabset}
+
+#### 1. Time Series + First Difference
+```{r}
+plot_original_and_diff("VIX")
+```
+
+#### 2. Stationarity
+```{r}
+run_stationarity("VIX")
+```
+
+#### 3. ACF & PACF
+```{r}
+plot_acf_pacf("VIX")
+```
+
+#### 4. ARIMA
+```{r}
+run_arima_models("VIX")
+```
+
+#### 5. Diagnostics
+```{r}
+run_arima_diagnostics("VIX")
+```
+
+#### 6. Forecast
+```{r}
+forecast_arima_asset("VIX")
+```
+
+#### 7. Benchmarks
+```{r}
+compare_benchmarks("VIX")
+```
+
+#### 8. SARIMA
+```{r}
+run_sarima_models("VIX")
+```
+
+#### 9. SARIMA Forecast
+```{r}
+forecast_sarima_asset("VIX")
+```
+
+#### 10. Seasonality
+```{r}
+seasonality_analysis("VIX")
+```
+
+#### 11. Cross Validation
+```{r}
+cross_validate_sarima("VIX")
+```
+:::
+
+
+### USD
+::: {.panel-tabset}
+
+#### 1. Time Series + First Difference
+```{r}
+plot_original_and_diff("USD")
+```
+
+#### 2. Stationarity
+```{r}
+run_stationarity("USD")
+```
+
+#### 3. ACF & PACF
+```{r}
+plot_acf_pacf("USD")
+```
+
+#### 4. ARIMA
+```{r}
+run_arima_models("USD")
+```
+
+#### 5. Diagnostics
+```{r}
+run_arima_diagnostics("USD")
+```
+
+#### 6. Forecast
+```{r}
+forecast_arima_asset("USD")
+```
+
+#### 7. Benchmarks
+```{r}
+compare_benchmarks("USD")
+```
+
+#### 8. SARIMA
+```{r}
+run_sarima_models("USD")
+```
+
+#### 9. SARIMA Forecast
+```{r}
+forecast_sarima_asset("USD")
+```
+
+#### 10. Seasonality
+```{r}
+seasonality_analysis("USD")
+```
+
+#### 11. Cross Validation
+```{r}
+cross_validate_sarima("USD")
+```
+:::
+
+

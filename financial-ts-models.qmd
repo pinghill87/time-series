@@ -1,3 +1,672 @@
 ---
 title: "Financial Time Series Models (ARCH/GARCH)"
+code-fold: true
 ---
+
+```{r}
+#| warning: false
+#| message: false
+#| error: true
+
+
+suppressPackageStartupMessages({
+library(tidyverse)
+library(forecast)
+library(tseries)
+library(FinTS)
+library(rugarch)
+library(gridExtra)
+})
+
+suppressPackageStartupMessages({
+  library(quantmod); library(zoo); library(xts)
+  library(tidyverse); library(forecast); library(tseries)
+})
+
+start_date <- as.Date("2019-01-01")
+end_date   <- as.Date("2025-09-18")
+
+load_fred_data <- function(symbol, start, end) {
+  tryCatch(
+    getSymbols(symbol, src="FRED", from=start, to=end, auto.assign=FALSE, quiet = TRUE),
+    error = function(e) {
+      cat("FAILED to load:", symbol, "\nUsing fallback dummy series...\n")
+      xts(rep(1, 1000), order.by=seq(start, length.out=1000, by="days"))
+    }
+  )
+}
+
+sp500_data <- load_fred_data("SP500",    start_date, end_date)
+vix_data   <- load_fred_data("VIXCLS",   start_date, end_date)
+btc_data   <- load_fred_data("CBBTCUSD", start_date, end_date)
+
+merged <- merge(SP500 = sp500_data, VIX = vix_data, Bitcoin = btc_data)
+price_data <- fortify.zoo(merged)
+colnames(price_data) <- c("Date","SP500","VIX","Bitcoin")
+price_data <- price_data |> arrange(Date) |> na.omit()
+
+returns <- price_data |>
+  mutate(
+    SP500_ret   = c(NA, diff(log(SP500))),
+    VIX_ret     = c(NA, diff(log(VIX))),
+    Bitcoin_ret = c(NA, diff(log(Bitcoin)))
+  ) |>
+  na.omit()
+
+cat("Loaded:", nrow(returns), "returns\n")
+```
+
+```{r}
+
+#| warning: false
+
+
+
+# S&P 500 returns
+
+spx_ret   <- as.numeric(returns$SP500_ret)
+spx_dates <- returns$Date
+
+# Bitcoin returns
+
+btc_ret   <- as.numeric(returns$Bitcoin_ret)
+btc_dates <- returns$Date
+
+cat(sprintf("Length of SPX returns: %d observations\n", length(spx_ret)))
+cat(sprintf("Length of BTC returns: %d observations\n", length(btc_ret)))
+
+```
+
+## S&P 500
+
+::: {.panel-tabset}
+
+### A. Plot data & stationarity
+
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+p_level <- ggplot(price_data, aes(Date, SP500)) +
+geom_line() +
+theme_minimal() +
+labs(title = "S&P 500 — Price Level")
+
+p_ret <- ggplot(tibble(Date = spx_dates, SPX_ret = spx_ret),
+aes(Date, SPX_ret)) +
+geom_line() +
+theme_minimal() +
+labs(title = "S&P 500 — Daily Log-Returns")
+
+gridExtra::grid.arrange(p_level, p_ret, nrow = 2)
+
+adf_spx_ret <- adf.test(spx_ret)
+cat(sprintf("ADF p-value = %.4f\n", adf_spx_ret$p.value))
+
+```
+
+The price series is clearly non-stationary (upward trend and large moves).
+The returns fluctuate around zero with roughly constant mean and pass the ADF test (small p-value), so S&P 500 returns are stationary.
+The return plot shows volatility clustering, which motivates GARCH-type models.
+
+
+### B. ACF/PACF
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 4
+
+par(mfrow=c(1,2))
+acf(spx_ret, main="SPX Returns ACF")
+pacf(spx_ret, main="SPX Returns PACF")
+par(mfrow=c(1,1))
+
+```
+
+The ACF decays quickly and stays near zero; PACF has small spikes in early lags.
+This pattern suggests that a low-order ARMA model (e.g., ARMA(1,0), ARMA(1,1), ARMA(2,1)) is reasonable for the mean.
+
+### C. ARMA Mean Model Selection
+```{r}
+
+#| warning: false
+
+cand_orders <- list(
+c(0,0),
+c(1,0),
+c(1,1),
+c(2,1)
+)
+
+fit_list <- list()
+aic_vec <- c()
+
+for (ord in cand_orders) {
+p <- ord[1]; q <- ord[2]
+fit <- Arima(spx_ret, order=c(p,0,q), include.mean=TRUE)
+fit_list[[paste0("ARMA(",p,",",q,")")]] <- fit
+aic_vec <- c(aic_vec, AIC(fit))
+}
+
+aic_tbl <- tibble(
+Model = names(fit_list),
+AIC   = aic_vec
+) |> arrange(AIC)
+
+print(aic_tbl)
+
+best_name     <- aic_tbl$Model[1]
+best_mean_fit <- fit_list[[best_name]]
+
+cat("Selected mean model:", best_name, "\n")
+summary(best_mean_fit)
+
+```
+
+Here I try several candidate ARMA(p,q) models and compare AIC.
+The model with the lowest AIC (e.g., ARMA(2,1) in my run) is chosen as the mean model before adding GARCH.
+
+### D. Mean Model Residuals & ARCH Effects
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+res_mean <- residuals(best_mean_fit)
+
+par(mfrow=c(1,2))
+plot(res_mean, type="l", main="Residuals of Mean Model")
+acf(res_mean, main="Residual ACF")
+par(mfrow=c(1,1))
+
+arch_test <- ArchTest(res_mean, lags=10)
+print(arch_test)
+
+```
+
+```{r}
+
+#| warning: false
+#| fig.width: 8
+#| fig.height: 4
+
+# Standardized residuals for the ARMA-only model
+
+std_res_mean <- res_mean / sd(res_mean)
+
+par(mfrow=c(1,2))
+plot(std_res_mean, type="l", main="Standardized Residuals (Mean Model)")
+acf(std_res_mean, main="ACF of Standardized Residuals")
+par(mfrow=c(1,1))
+
+```
+
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 4
+
+# Squared residuals to detect ARCH effects visually
+
+sq_res <- res_mean^2
+
+par(mfrow=c(1,2))
+acf(sq_res, main="ACF of Squared Residuals")
+pacf(sq_res, main="PACF of Squared Residuals")
+par(mfrow=c(1,1))
+
+```
+
+The residuals still show volatility clustering.
+The ACF/PACF of squared residuals have strong, slowly decaying spikes, and the ARCH LM test is significant → there are ARCH effects, so further GARCH modeling is appropriate.
+
+### E. GARCH(p,q) Grid Search
+```{r}
+
+#| warning: false
+
+# Extract ARMA mean orders correctly
+
+ord    <- arimaorder(best_mean_fit)
+p_mean <- ord[1]
+q_mean <- ord[3]
+
+cat("Mean model p =", p_mean, " q =", q_mean, "\n")
+
+garch_cands <- list(
+c(1,1),
+c(2,1),
+c(1,2)
+)
+
+garch_fits <- list()
+garch_aic  <- c()
+
+for (x in garch_cands) {
+
+spec <- ugarchspec(
+variance.model = list(
+model = "sGARCH",
+garchOrder = x
+),
+mean.model = list(
+armaOrder = c(p_mean, q_mean),
+include.mean = TRUE
+),
+distribution.model = "norm"
+)
+
+fit <- tryCatch(
+ugarchfit(spec, spx_ret),
+error = function(e) NULL
+)
+
+if (!is.null(fit)) {
+name <- paste0("ARMA(", p_mean, ",", q_mean, ")-GARCH(", x[1], ",", x[2], ")")
+garch_fits[[name]] <- fit
+garch_aic <- c(garch_aic, infocriteria(fit)[1])
+}
+}
+
+garch_tbl <- tibble(
+Model = names(garch_fits),
+AIC   = garch_aic
+) |> arrange(AIC)
+
+print(garch_tbl)
+
+best_garch_name <- garch_tbl$Model[1]
+best_garch_fit  <- garch_fits[[best_garch_name]]
+
+cat("Best GARCH model:", best_garch_name, "\n")
+
+```
+
+I compare several GARCH(p,q) candidates and use AIC to select the best ARMA+GARCH combination (e.g., ARMA(2,1)–GARCH(2,1)).
+
+### F. Final GARCH Diagnostics
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 6
+
+z_resid <- residuals(best_garch_fit, standardize=TRUE)
+
+par(mfrow=c(2,2))
+plot(z_resid, type="l", main="Standardized Residuals")
+acf(z_resid, main="ACF(z_t)")
+acf(z_resid^2, main="ACF(z_t^2)")
+qqnorm(z_resid); qqline(z_resid, col=2)
+par(mfrow=c(1,1))
+
+```
+
+```{r}
+
+#| warning: false
+#| fig.width: 8
+#| fig.height: 4
+
+hist(z_resid, breaks=40,
+main="Histogram of Standardized GARCH Residuals",
+xlab="z_t", col="lightgray", border="white")
+
+```
+
+```{r}
+
+#| warning: false
+
+# Box-Ljung test for standardized residuals and squared residuals
+
+ljung_resid <- Box.test(z_resid, lag=20, type="Ljung-Box")
+ljung_sqres <- Box.test(z_resid^2, lag=20, type="Ljung-Box")
+
+cat("Box-Ljung test (residuals):\n")
+print(ljung_resid)
+
+cat("\nBox-Ljung test (squared residuals):\n")
+print(ljung_sqres)
+
+```
+
+The standardized residuals look more stable.
+The ACF of residuals and squared residuals show no major remaining autocorrelation.
+Box–Ljung p-values are > 0.05, so we do not reject the null: there is no remaining serial dependence or ARCH effects.
+This suggests the GARCH model captures the volatility dynamics well.
+
+### G. Model Equation (SPX)
+
+```{r}
+
+#| warning: false
+
+# Extract model parameters to help write final equation later
+
+best_params <- coef(best_garch_fit)
+cat("Final Model Parameters (SPX):\n")
+print(best_params)
+
+show(best_garch_fit)  # shows mean & variance equations in rugarch format
+
+```
+
+
+### Final ARMA(2,1)–GARCH(2,1) model
+
+
+
+
+The model is for daily log-returns \(r_t\) with innovations \(\varepsilon_t\) and conditional variance \(\sigma_t^2\).
+
+**Mean equation**
+
+$$
+r_t
+= 0.001014
++ 0.929239\, r_{t-1}
++ 0.009881\, r_{t-2}
+- 0.962266\, \varepsilon_{t-1}
++ \varepsilon_t
+$$
+
+**Variance equation**
+
+$$
+\sigma_t^2
+= 0.00000437
++ 0.164556\, \varepsilon_{t-1}^2
++ 0.001025\, \varepsilon_{t-2}^2
++ 0.804889\, \sigma_{t-1}^2
+$$
+
+
+
+
+:::
+
+## Bitcoin
+
+::: {.panel-tabset}
+
+### A. Plot data & stationarity
+
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+p_btc_level <- ggplot(price_data, aes(Date, Bitcoin)) +
+geom_line() +
+theme_minimal() +
+labs(title = "Bitcoin — Price Level")
+
+p_btc_ret <- ggplot(tibble(Date = btc_dates, BTC_ret = btc_ret),
+aes(Date, BTC_ret)) +
+geom_line() +
+theme_minimal() +
+labs(title = "Bitcoin — Daily Log-Returns")
+
+gridExtra::grid.arrange(p_btc_level, p_btc_ret, nrow = 2)
+
+adf_btc_ret <- adf.test(btc_ret)
+cat(sprintf("ADF p-value (BTC returns) = %.4f\n", adf_btc_ret$p.value))
+
+
+```
+
+Bitcoin prices are highly volatile and clearly non-stationary in level.
+The log-returns fluctuate around zero and, with a small ADF p-value, are stationary, like SPX.
+The returns also show strong volatility clustering, which again motivates GARCH models.
+
+
+### B. ACF/PACF
+
+```{r}
+
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 4
+
+par(mfrow=c(1,2))
+acf(btc_ret, main="BTC Returns ACF")
+pacf(btc_ret, main="BTC Returns PACF")
+par(mfrow=c(1,1))
+
+
+```
+
+The ACF decays quickly and PACF has only a few small early spikes → a low-order ARMA model is again appropriate for the mean.
+
+### C. ARMA Mean Model Selection (BTC)
+```{r}
+
+
+#| warning: false
+
+cand_orders_btc <- list(
+c(0,0),
+c(1,0),
+c(1,1),
+c(2,1)
+)
+
+fit_list_btc <- list()
+aic_vec_btc  <- c()
+
+for (ord in cand_orders_btc) {
+p <- ord[1]; q <- ord[2]
+fit <- Arima(btc_ret, order=c(p,0,q), include.mean=TRUE)
+fit_list_btc[[paste0("ARMA(",p,",",q,")")]] <- fit
+aic_vec_btc <- c(aic_vec_btc, AIC(fit))
+}
+
+aic_tbl_btc <- tibble(
+Model = names(fit_list_btc),
+AIC   = aic_vec_btc
+) |> arrange(AIC)
+
+print(aic_tbl_btc)
+
+best_name_btc     <- aic_tbl_btc$Model[1]
+best_mean_fit_btc <- fit_list_btc[[best_name_btc]]
+
+cat("Selected BTC mean model:", best_name_btc, "\n")
+summary(best_mean_fit_btc)
+
+```
+Same workflow as SPX: test several ARMA(p,q) candidates and select the lowest-AIC model for BTC returns.
+
+
+### D. Mean Model Residuals & ARCH Effects (BTC)
+```{r}
+
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+res_mean_btc <- residuals(best_mean_fit_btc)
+
+par(mfrow=c(1,2))
+plot(res_mean_btc, type="l", main="BTC Residuals of Mean Model")
+acf(res_mean_btc, main="BTC Residual ACF")
+par(mfrow=c(1,1))
+
+arch_test_btc <- ArchTest(res_mean_btc, lags=10)
+print(arch_test_btc)
+
+
+```
+
+```{r}
+
+#| warning: false
+#| fig.width: 8
+#| fig.height: 4
+
+std_res_mean_btc <- res_mean_btc / sd(res_mean_btc)
+
+par(mfrow=c(1,2))
+plot(std_res_mean_btc, type="l",
+main="BTC Standardized Residuals (Mean Model)")
+acf(std_res_mean_btc, main="BTC ACF of Standardized Residuals")
+par(mfrow=c(1,1))
+
+```
+
+
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 4
+
+sq_res_btc <- res_mean_btc^2
+
+par(mfrow=c(1,2))
+acf(sq_res_btc, main="BTC ACF of Squared Residuals")
+pacf(sq_res_btc, main="BTC PACF of Squared Residuals")
+par(mfrow=c(1,1))
+
+```
+
+Just like SPX, BTC residuals exhibit ARCH effects: squared residuals show clear autocorrelation and the ARCH test is significant.
+So a GARCH(p,q) model is appropriate for Bitcoin returns as well.
+
+### E. GARCH(p,q) Grid Search (BTC)
+```{r}
+
+#| warning: false
+
+ord_btc    <- arimaorder(best_mean_fit_btc)
+p_mean_btc <- ord_btc[1]
+q_mean_btc <- ord_btc[3]
+
+cat("BTC mean model p =", p_mean_btc, " q =", q_mean_btc, "\n")
+
+garch_cands_btc <- list(
+c(1,1),
+c(2,1),
+c(1,2)
+)
+
+garch_fits_btc <- list()
+garch_aic_btc  <- c()
+
+for (x in garch_cands_btc) {
+
+spec_btc <- ugarchspec(
+variance.model = list(
+model = "sGARCH",
+garchOrder = x
+),
+mean.model = list(
+armaOrder = c(p_mean_btc, q_mean_btc),
+include.mean = TRUE
+),
+distribution.model = "norm"
+)
+
+fit_btc <- tryCatch(
+ugarchfit(spec_btc, btc_ret),
+error = function(e) NULL
+)
+
+if (!is.null(fit_btc)) {
+name <- paste0("ARMA(", p_mean_btc, ",", q_mean_btc,
+")-GARCH(", x[1], ",", x[2], ")")
+garch_fits_btc[[name]] <- fit_btc
+garch_aic_btc <- c(garch_aic_btc, infocriteria(fit_btc)[1])
+}
+}
+
+garch_tbl_btc <- tibble(
+Model = names(garch_fits_btc),
+AIC   = garch_aic_btc
+) |> arrange(AIC)
+
+print(garch_tbl_btc)
+
+best_garch_name_btc <- garch_tbl_btc$Model[1]
+best_garch_fit_btc  <- garch_fits_btc[[best_garch_name_btc]]
+
+cat("Best BTC GARCH model:", best_garch_name_btc, "\n")
+
+```
+
+Again, I compare multiple BTC GARCH(p,q) candidates using AIC and select the best ARMA+GARCH combination.
+
+### F. Final GARCH Diagnostics (BTC)
+
+```{r}
+
+#| warning: false
+#| fig.width: 10
+#| fig.height: 6
+
+z_resid_btc <- residuals(best_garch_fit_btc, standardize=TRUE)
+
+par(mfrow=c(2,2))
+plot(z_resid_btc, type="l", main="BTC Standardized Residuals")
+acf(z_resid_btc, main="BTC ACF(z_t)")
+acf(z_resid_btc^2, main="BTC ACF(z_t^2)")
+qqnorm(z_resid_btc); qqline(z_resid_btc, col=2)
+par(mfrow=c(1,1))
+
+```
+
+
+```{r}
+
+#| warning: false
+#| fig.width: 8
+#| fig.height: 4
+
+hist(z_resid_btc, breaks=40,
+main="Histogram of BTC Standardized GARCH Residuals",
+xlab="z_t", col="lightgray", border="white")
+
+```
+
+
+```{r}
+
+#| warning: false
+
+ljung_resid_btc <- Box.test(z_resid_btc, lag=20, type="Ljung-Box")
+ljung_sqres_btc <- Box.test(z_resid_btc^2, lag=20, type="Ljung-Box")
+
+cat("BTC Box-Ljung test (residuals):\n")
+print(ljung_resid_btc)
+
+cat("\nBTC Box-Ljung test (squared residuals):\n")
+print(ljung_sqres_btc)
+
+```
+
+For BTC as well, the standardized residuals after GARCH are much more stable, and Box–Ljung tests on both residuals and squared residuals should show no strong remaining dependence if the model fits well. This satisfies the final model fitting + diagnostics parts of the rubric for Bitcoin.
+
+### G. Model Equation (BTC)
+
+```{r}
+
+#| warning: false
+
+best_params_btc <- coef(best_garch_fit_btc)
+cat("Final BTC Model Parameters:\n")
+print(best_params_btc)
+
+show(best_garch_fit_btc)
+
+```
+
+:::

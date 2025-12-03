@@ -1,3 +1,187 @@
 ---
 title: "Other: Interrupted TS/ARFIMA/Spectral Analysis"
+code-fold: true
 ---
+
+```{r}
+#1. Load Bitcoin Data (Self-Contained Block)
+#| label: load-btc
+#| warning: false
+#| message: false
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(quantmod)
+  library(zoo)
+  library(lubridate)
+})
+
+start_date <- as.Date("2019-01-01")
+end_date   <- as.Date("2025-09-18")
+
+btc_data <- getSymbols("CBBTCUSD",
+                       src="FRED",
+                       from=start_date,
+                       to=end_date,
+                       auto.assign=FALSE)
+
+btc_df <- fortify.zoo(btc_data)
+colnames(btc_df) <- c("Date", "Bitcoin")
+btc_df <- btc_df |> arrange(Date) |> drop_na()
+
+btc_returns <- btc_df |>
+  mutate(Bitcoin_ret = c(NA, diff(log(Bitcoin)))) |>
+  drop_na()
+
+```
+
+Bitcoin returns remain very noisy with frequent spikes both up and down. The plot shows a cluster of heavier negative returns around late 2022, but outside of that, the series behaves in its typical volatile fashion.
+
+```{r}
+#2. Create Intervention Variables
+#| label: its-intervention
+#| warning: false
+
+intervention_date <- as.Date("2022-11-08")  # FTX collapse
+
+its_df <- btc_returns |>
+  mutate(
+    time_index = row_number(),
+    intervention = if_else(Date >= intervention_date, 1, 0),
+    time_after_intervention = if_else(Date >= intervention_date,
+                                      time_index - min(time_index[Date >= intervention_date]),
+                                      0)
+  )
+
+```
+
+```{r}
+# 3. Plot Bitcoin Returns with Intervention Line
+#| label: its-plot
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+ggplot(its_df, aes(Date, Bitcoin_ret)) +
+  geom_line(color="steelblue", alpha=0.8) +
+  geom_vline(xintercept = as.numeric(intervention_date),
+             color="red", linewidth=1) +
+  labs(title="Bitcoin Daily Log Returns with FTX Collapse",
+       x="Date", y="Log Return") +
+  theme_minimal()
+
+```
+## Interpretation of the Trend Plot
+
+The pre- and post-FTX trend lines are nearly flat and almost identical. This visually confirms what the regression results showed:
+
+- no major uptick in average returns
+- no sustained downturn
+- no visible new trend emerging after the collapse
+
+Overall, Bitcoin simply returns to its usual noisy, mean-reverting behavior after the event.
+
+
+```{r}
+#4. Fit Interrupted Time Series Regression Model
+#| label: its-model
+#| warning: false
+
+its_model <- lm(
+  Bitcoin_ret ~ time_index + intervention + time_after_intervention,
+  data = its_df
+)
+
+summary(its_model)
+
+```
+
+## Interpretation: Did the FTX collapse create a meaningful structural change?
+
+Based on the ITS regression:
+
+Immediate level shift:
+The coefficient for the intervention date is 0.00348, but it is not statistically significant (p = 0.206).
+→ This means Bitcoin did not experience a clear jump or drop in average returns on the exact day of the collapse.
+
+Pre-event trend:
+The time_index coefficient is slightly negative and borderline significant (p ≈ 0.069).
+→ Bitcoin returns showed a mild downward drift heading into the event.
+
+Post-event trend change:
+The “time_after_intervention” slope is very small and not significant (p = 0.37).
+→ The slope of returns after the event did not materially change.
+
+**Conclusion:**  
+There is no statistical evidence that the FTX collapse created a persistent shift in Bitcoin’s return levels or trend. Short-term volatility was visible around the event, but there is no long-term structural break in the daily returns.
+
+
+```{r}
+#5. Pre-Intervention vs Post-Intervention Trend Lines
+#| label: its-trendlines
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+ggplot(its_df, aes(Date, Bitcoin_ret)) +
+  geom_line(alpha=0.5, color="gray40") +
+  geom_vline(xintercept = as.numeric(intervention_date),
+             color="red", linewidth=1) +
+  geom_smooth(
+    data = its_df |> filter(Date < intervention_date),
+    method="lm", se=FALSE, color="blue", linewidth=1
+  ) +
+  geom_smooth(
+    data = its_df |> filter(Date >= intervention_date),
+    method="lm", se=FALSE, color="darkgreen", linewidth=1
+  ) +
+  labs(title="Pre- vs Post-FTX Trend in Bitcoin Returns",
+       x="Date", y="Log Return") +
+  theme_minimal()
+
+```
+
+```{r}
+#6. Plot Mean Levels Before & After (Boxplot)
+#| label: its-boxplot
+#| warning: false
+#| fig.width: 8
+#| fig.height: 5
+
+ggplot(its_df, aes(x = factor(intervention, labels=c("Before","After")),
+                   y = Bitcoin_ret)) +
+  geom_boxplot(fill="lightblue") +
+  labs(title="Distribution of Bitcoin Returns Before vs After FTX Collapse",
+       x="Period", y="Daily Log Return") +
+  theme_minimal()
+
+
+```
+
+The distribution of returns before and after FTX looks nearly the same:
+
+Medians are almost identical
+
+The spread is similar
+
+Extreme outliers exist in both periods
+
+Slightly fewer huge negative outliers after the collapse
+
+This matches the regression:
+the event did not shift the average return or the variance in a meaningful way.
+
+```{r}
+#7. Optional: Residual Diagnostics for ITS Model
+#| label: its-diagnostics
+#| warning: false
+#| fig.width: 10
+#| fig.height: 6
+
+par(mfrow=c(2,2))
+plot(its_model)
+par(mfrow=c(1,1))
+
+```
+
+The FTX collapse produced temporary turbulence in Bitcoin returns but did not cause any significant long-run shift in the average return or trend. Bitcoin’s underlying return behavior remained essentially unchanged after the event.

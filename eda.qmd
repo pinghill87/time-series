@@ -1,934 +1,505 @@
 ---
 title: "Exploratory Data Analysis"
-code-fold: true
+author: "Financial Time Series Analysis"
+date: today
+format:
+  html:
+    code-fold: true
+    toc: true
+    toc-depth: 3
+    theme: cosmo
 ---
 
-```{python}
-# %%
-# EDA Setup and Data Loading
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import adfuller
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-import pandas_datareader as pdr
-import warnings
-warnings.filterwarnings('ignore')
+```{r setup}
+#| warning: false
+#| message: false
+#| echo: false
+
+# ==============================================================================
+# EXPLORATORY DATA ANALYSIS (EDA) - R VERSION
+# Bitcoin, S&P 500, and VIX — per-asset sections with tabsets
+# ==============================================================================
+
+required_packages <- c(
+  "tidyverse","quantmod","tseries","forecast","ggplot2",
+  "gridExtra","scales","lubridate","zoo","PerformanceAnalytics"
+)
+new_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+if (length(new_packages)) install.packages(new_packages, quiet = TRUE)
+
+suppressPackageStartupMessages({
+  library(tidyverse); library(quantmod); library(tseries); library(forecast)
+  library(ggplot2);   library(gridExtra); library(scales);  library(lubridate)
+  library(zoo);       library(PerformanceAnalytics)
+})
+
+cat(strrep("=", 60), "\n")
+cat("EXPLORATORY DATA ANALYSIS (EDA)\n")
+cat(strrep("=", 60), "\n\n")
+```
 
 
-plt.style.use('default')
-sns.set_palette("husl")
+```{r}
+#| warning: false
+#| message: false
 
-print("EXPLORATORY DATA ANALYSIS (EDA)")
-print("=" * 60)
+#| warning: false
+#| message: false
 
-# Load data if not already loaded
-try:
-    # Check if price_data exists
-    print(f"Using existing data: {price_data.shape}")
-except NameError:
-    # Load fresh data
-    print("Loading financial data...")
-    
-    start_date = '2019-01-01'
-    end_date = '2025-09-18'
-    
-    working_series = {
-        'SP500': 'SP500',
-        'VIX': 'VIXCLS', 
-        'Bitcoin': 'CBBTCUSD'
-    }
-    
-    price_data = {}
-    for name, code in working_series.items():
-        try:
-            data = pdr.get_data_fred(code, start_date, end_date)
-            if not data.empty:
-                price_data[name] = data.iloc[:, 0]
-        except:
-            pass
-    
-    price_data = pd.DataFrame(price_data)
-    price_data = price_data.dropna(how='all')
-    returns = price_data.pct_change().dropna()
-    
-    print(f"Data loaded: {price_data.shape}")
+cat("Loading financial data...\n")
+
+start_date <- as.Date("2019-01-01")
+end_date   <- as.Date("2025-09-18")
+
+load_fred_data <- function(symbol, start, end) {
+  tryCatch({
+    getSymbols(symbol, src = "FRED", from = start, to = end, auto.assign = FALSE)
+  }, error = function(e) { 
+    cat(sprintf("Warning: Could not load %s\n", symbol)); 
+    NULL 
+  })
+}
+
+# ---- Load Core Data ----
+sp500_data   <- load_fred_data("SP500",       start_date, end_date)
+vix_data     <- load_fred_data("VIXCLS",      start_date, end_date)
+btc_data     <- load_fred_data("CBBTCUSD",    start_date, end_date)
+nasdaq_data  <- load_fred_data("NASDAQCOM",   start_date, end_date)  
+usd_data     <- load_fred_data("DTWEXBGS",         start_date, end_date)   # USD Index (Broad Dollar Index)
+
+# ---- Merge All ----
+price_data <- merge.zoo(
+  SP500    = sp500_data,
+  VIX      = vix_data,
+  Bitcoin  = btc_data,
+  NASDAQ   = nasdaq_data,
+  USD      = usd_data
+)
+
+price_data <- fortify.zoo(price_data)
+colnames(price_data) <- c("Date","SP500","VIX","Bitcoin","NASDAQ","USD")
+price_data <- price_data |> na.omit()
+
+cat(sprintf("Data loaded: %d observations, %d variables\n", 
+            nrow(price_data), ncol(price_data)-1))
+
+# ---- Returns ----
+returns <- price_data |>
+  arrange(Date) |>
+  mutate(
+    SP500_ret   = c(NA, diff(log(SP500))),
+    VIX_ret     = c(NA, diff(log(VIX))),
+    Bitcoin_ret = c(NA, diff(log(Bitcoin))),
+    NASDAQ_ret  = c(NA, diff(log(NASDAQ))),
+    USD_ret     = c(NA, diff(log(USD)))
+  ) |>
+  na.omit()
+
+
 
 ```
 
-```{python}
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
 
-# %%
-# 1. TIME SERIES PLOTS AND COMPONENT IDENTIFICATION
-print("\n1. TIME SERIES COMPONENT IDENTIFICATION")
-print("-" * 50)
+# ===== Helper functions (reuse across assets) =====
 
-# Focus on main assets for detailed analysis
-main_assets = ['Bitcoin', 'SP500', 'VIX']
+plot_ts_with_trend <- function(asset) {
+stopifnot(asset %in% colnames(price_data))
+df <- price_data |> dplyr::select(Date, dplyr::all_of(asset)) |> tidyr::drop_na()
+x  <- seq_len(nrow(df))
+df$trend <- predict(lm(df[[asset]] ~ x))
 
-fig, axes = plt.subplots(3, 1, figsize=(15, 12))
-fig.suptitle('Time Series Analysis: Trends, Seasonality, and Variations', fontsize=16, fontweight='bold')
+ggplot(df, aes(x = Date)) +
+geom_line(aes(y = .data[[asset]], color = "Actual"), linewidth = 0.8, alpha = 0.85) +
+geom_line(aes(y = trend, color = "Trend"), linewidth = 1.1, linetype = "dashed") +
+scale_color_manual(values = c("Actual" = "steelblue", "Trend" = "red")) +
+labs(title = paste(asset, "- Original Time Series"), x = "Date", y = "Price/Level", color = "") +
+theme_minimal() + theme(legend.position = "bottom", plot.title = element_text(face = "bold"))
+}
 
-for i, asset in enumerate(main_assets):
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        
-        axes[i].plot(data.index, data, linewidth=1.5, alpha=0.8, label=asset)
-        axes[i].set_title(f'{asset} - Original Time Series', fontsize=12)
-        axes[i].set_ylabel('Price/Level')
-        axes[i].grid(True, alpha=0.3)
-        axes[i].legend()
-        
-        # Add trend line
-        x_numeric = np.arange(len(data))
-        z = np.polyfit(x_numeric, data, 1)
-        p = np.poly1d(z)
-        axes[i].plot(data.index, p(x_numeric), "r--", alpha=0.8, linewidth=2, label='Trend Line')
-        axes[i].legend()
+component_analysis_print <- function(asset) {
+vals <- stats::na.omit(price_data[[asset]])
+x    <- seq_along(vals)
+trend_slope <- coef(lm(vals ~ x))[2]
+cv   <- stats::sd(vals)/mean(vals)
+cat(sprintf("• Trend: %s (slope: %.4f)\n", ifelse(trend_slope>0,"Upward","Downward"), trend_slope))
+cat(sprintf("• Variation (CV): %.3f\n", cv))
+cat(sprintf("• Range: %.2f to %.2f\n", min(vals), max(vals)))
+if (length(vals) > 100) {
+high <- vals[vals > median(vals)]; low <- vals[vals <= median(vals)]
+var_ratio <- var(high)/var(low); seasonality <- ifelse(var_ratio>2,"Multiplicative","Additive")
+cat(sprintf("• Seasonality Type: %s (variance ratio: %.2f)\n", seasonality, var_ratio))
+}
+}
 
-plt.tight_layout()
-plt.show()
+create_lag_plots <- function(asset, lags = c(1,7,30)) {
+values <- price_data[[asset]]
+lag_corrs <- numeric(length(lags))
+par(mfrow = c(1, length(lags)), mar = c(4,4,3,1))
+for (i in seq_along(lags)) {
+k <- lags[i]
+if (length(values) > k) {
+y <- values[(k+1):length(values)]
+x <- values[1:(length(values)-k)]
+ok <- !is.na(x) & !is.na(y)
+plot(x[ok], y[ok], pch=16, col=rgb(0,0,1,0.5), cex=0.5,
+xlab=sprintf("%s(t-%d)", asset, k), ylab=sprintf("%s(t)", asset),
+main=sprintf("Lag %d %s", k, ifelse(k==1,"day","days"))); grid()
+if (sum(ok) > 1) {
+r <- cor(x[ok], y[ok]); lag_corrs[i] <- r
+text(min(x[ok]) + 0.05*diff(range(x[ok])),
+max(y[ok]) - 0.05*diff(range(y[ok])),
+sprintf("Corr: %.3f", r), pos=4)
+}
+}
+}
+par(mfrow = c(1,1))
+invisible(lag_corrs)
+}
 
-```
+plot_acf_pacf <- function(asset, lags = 40) {
+vals <- price_data[[asset]] |> stats::na.omit()
+par(mfrow=c(2,1), mar=c(4,4,3,1))
+acf(vals,  lag.max=lags, main=paste(asset,"- ACF"));  grid()
+pacf(vals, lag.max=lags, main=paste(asset,"- PACF")); grid()
+par(mfrow=c(1,1))
+}
 
-```{python}
+adf_print <- function(asset) {
+vals <- price_data[[asset]] |> stats::na.omit()
+res  <- tseries::adf.test(vals, alternative="stationary")
+cat(sprintf("ADF Statistic: %.4f\np-value: %.4f\nConclusion: %s\n",
+res$statistic, res$p.value,
+ifelse(res$p.value<0.05,"STATIONARY (reject H0)","NON-STATIONARY (fail to reject H0)")))
+invisible(res)
+}
 
-# Component Analysis
-print("\nCOMPONENT ANALYSIS:")
-print("-" * 30)
-for asset in main_assets:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        
-        # Calculate basic statistics
-        trend_slope = np.polyfit(range(len(data)), data, 1)[0]
-        cv = data.std() / data.mean()
-        
-        print(f"\n{asset}:")
-        print(f"  • Trend: {'Upward' if trend_slope > 0 else 'Downward'} (slope: {trend_slope:.4f})")
-        print(f"  • Variation: {cv:.3f} (Coefficient of Variation)")
-        print(f"  • Range: {data.min():.2f} to {data.max():.2f}")
-        
-        # Check for multiplicative vs additive seasonality
-        if len(data) > 100:
-            high_period = data[data > data.median()]
-            low_period = data[data <= data.median()]
-            var_ratio = high_period.var() / low_period.var()
-            
-            seasonality_type = "Multiplicative" if var_ratio > 2 else "Additive"
-            print(f"  • Seasonality Type: {seasonality_type} (variance ratio: {var_ratio:.2f})")
-```
+make_stationary <- function(asset) {
+vals <- price_data[[asset]] |> stats::na.omit()
+tr <- list(original = vals,
+first_diff = diff(vals),
+second_diff = diff(diff(vals)))
+if (all(vals > 0)) {
+tr$log      <- log(vals)
+tr$log_diff <- diff(log(vals))
+}
+cat(sprintf("Stationarity tests for %s transformations:\n", asset))
+cat(strrep("-", 40), "\n")
+par(mfrow=c(2,2), mar=c(3,4,3,1))
+shown <- 0
+for (nm in names(tr)) {
+x <- tr[[nm]]
+if (length(x) > 10) {
+res <- tseries::adf.test(x, alternative="stationary")
+status <- ifelse(res$p.value < 0.05, "✓ STATIONARY", "✗ Non-stationary")
+cat(sprintf("  %-12s | ADF: %7.3f | p: %.4f | %s\n", nm, res$statistic, res$p.value, status))
+if (shown < 4) {
+plot(x, type="l", main=nm, ylab="Value", xlab=""); grid()
+shown <- shown + 1
+}
+}
+}
+par(mfrow=c(1,1))
+invisible(NULL)
+}
 
-```{python}
-# %%
-# 2. LAG PLOTS ANALYSIS
-print("\n\n2. LAG PLOTS ANALYSIS")
-print("-" * 50)
+moving_average_panel <- function(asset, windows = c(5,20,60,120)) {
+vals  <- price_data[[asset]]; dates <- price_data$Date
+plot(dates, vals, type="l", col="black", lwd=1,
+main=paste(asset,"- Moving Average Smoothing"),
+xlab="Date", ylab="Value", ylim=range(vals, na.rm=TRUE)); grid()
+cols <- c("red","green","blue","purple","orange")
+legend_text <- c("Original"); legend_cols <- c("black"); idx <- 1
+for (w in windows) {
+if (length(vals) > w) {
+ma <- zoo::rollmean(vals, k=w, fill=NA, align="center")
+lines(dates, ma, col=cols[idx], lwd=2)
+legend_text <- c(legend_text, paste0("MA-", w))
+legend_cols <- c(legend_cols, cols[idx]); idx <- idx + 1
+}
+}
+legend("topleft", legend = legend_text, col = legend_cols, lwd = 2, bty = "n")
 
-def create_lag_plots(data, asset_name, lags=[1, 7, 30]):
-    """Create lag plots for different time periods"""
-    fig, axes = plt.subplots(1, len(lags), figsize=(15, 4))
-    fig.suptitle(f'{asset_name} - Lag Plots Analysis', fontsize=14)
-    
-    lag_correlations = []
-    
-    for i, lag in enumerate(lags):
-        if len(data) > lag:
-            # Create properly aligned data
-            original = data.iloc[lag:]  # Skip first 'lag' observations
-            lagged = data.iloc[:-lag]   # Skip last 'lag' observations
-            
-            # Remove any remaining NaN values
-            valid_mask = ~(np.isnan(original) | np.isnan(lagged))
-            x = lagged[valid_mask]
-            y = original[valid_mask]
-            
-            if len(x) > 0 and len(y) > 0:
-                axes[i].scatter(x, y, alpha=0.6, s=20)
-                axes[i].set_xlabel(f'{asset_name}(t-{lag})')
-                axes[i].set_ylabel(f'{asset_name}(t)')
-                axes[i].set_title(f'Lag {lag} {"day" if lag == 1 else "days"}')
-                axes[i].grid(True, alpha=0.3)
-                
-                # Calculate correlation safely
-                if len(x) > 1:
-                    corr = np.corrcoef(x, y)[0, 1]
-                    lag_correlations.append(corr)
-                    axes[i].text(0.05, 0.95, f'Corr: {corr:.3f}', 
-                                transform=axes[i].transAxes, fontsize=11,
-                                bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
-                else:
-                    lag_correlations.append(np.nan)
-    
-    plt.tight_layout()
-    plt.show()
-    
-    return lag_correlations
+# quick text stats
 
-# Analyze lag plots for main assets
-lag_results = {}
-for asset in ['Bitcoin', 'SP500']:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        print(f"\nAnalyzing {asset} lag relationships...")
-        lag_correlations = create_lag_plots(data, asset)
-        lag_results[asset] = lag_correlations
-
-# Interpretation
-print("\nLAG PLOT INTERPRETATION:")
-print("-" * 30)
-for asset, correlations in lag_results.items():
-    print(f"\n{asset}:")
-    if len(correlations) >= 3:
-        print(f"  • 1-day autocorrelation: {correlations[0]:.3f}")
-        print(f"    {'Strong persistence' if correlations[0] > 0.8 else 'Moderate persistence' if correlations[0] > 0.5 else 'Weak persistence'}")
-        print(f"  • 7-day autocorrelation: {correlations[1]:.3f}")
-        print(f"  • 30-day autocorrelation: {correlations[2]:.3f}")
-        
-        if correlations[0] > 0.9:
-            print(f"    → {asset} shows strong trend/non-stationarity")
-        elif correlations[0] > 0.7:
-            print(f"    → {asset} shows moderate trend component")
-        else:
-            print(f"    → {asset} shows mean-reverting behavior")
-  
-
-```
-
-```{python}
-
-def perform_decomposition(data, asset_name, model='additive', period=252):
-    """Perform time series decomposition"""
-    try:
-        
-        clean_data = data.dropna()
-        if len(clean_data) < period * 2:
-            period = min(30, len(clean_data) // 4)
-        
-        # Perform decomposition
-        decomposition = seasonal_decompose(clean_data, model=model, period=period, extrapolate_trend='freq')
-        
-        # Create decomposition plot
-        fig, axes = plt.subplots(4, 1, figsize=(15, 12))
-        fig.suptitle(f'{asset_name} - {model.title()} Decomposition (Period: {period})', fontsize=14)
-        
-        # Original series
-        axes[0].plot(decomposition.observed.index, decomposition.observed, linewidth=1.5)
-        axes[0].set_title('Original Time Series')
-        axes[0].set_ylabel('Value')
-        axes[0].grid(True, alpha=0.3)
-        
-        # Trend
-        axes[1].plot(decomposition.trend.index, decomposition.trend, color='red', linewidth=2)
-        axes[1].set_title('Trend Component')
-        axes[1].set_ylabel('Trend')
-        axes[1].grid(True, alpha=0.3)
-        
-        # Seasonal
-        axes[2].plot(decomposition.seasonal.index, decomposition.seasonal, color='green', linewidth=1)
-        axes[2].set_title('Seasonal Component')
-        axes[2].set_ylabel('Seasonal')
-        axes[2].grid(True, alpha=0.3)
-        
-        # Residual
-        axes[3].plot(decomposition.resid.index, decomposition.resid, color='orange', linewidth=1)
-        axes[3].set_title('Residual Component')
-        axes[3].set_ylabel('Residual')
-        axes[3].set_xlabel('Date')
-        axes[3].grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.show()
-        
-        # Calculate component statistics
-        trend_strength = 1 - decomposition.resid.var() / (decomposition.trend + decomposition.resid).var()
-        seasonal_strength = 1 - decomposition.resid.var() / (decomposition.seasonal + decomposition.resid).var()
-        
-        return decomposition, trend_strength, seasonal_strength
-        
-    except Exception as e:
-        print(f"Could not decompose {asset_name}: {str(e)}")
-        return None, None, None
-
-# Perform decomposition for main assets
-decomposition_results = {}
-for asset in ['Bitcoin', 'SP500']:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        print(f"\nDecomposing {asset}...")
-        
-        # Try additive first
-        decomp, trend_str, seasonal_str = perform_decomposition(data, asset, 'additive')
-        if decomp is not None:
-            decomposition_results[asset] = {
-                'decomposition': decomp,
-                'trend_strength': trend_str,
-                'seasonal_strength': seasonal_str,
-                'model': 'additive'
-            }
+cat(sprintf("Variance reduction & correlations for %s:\n", asset))
+base_var <- var(vals, na.rm=TRUE)
+for (w in windows) {
+if (length(vals) > w) {
+ma <- zoo::rollmean(vals, k=w, fill=NA, align="center")
+ma_var <- var(ma, na.rm=TRUE)
+vr <- (base_var - ma_var)/base_var*100
+r  <- cor(vals, ma, use="complete.obs")
+cat(sprintf("  MA-%3d: Var↓ %5.1f%% | Corr %.3f\n", w, vr, r))
+}
+}
+invisible(NULL)
+}
 
 ```
 
-```{python}
-# Print decomposition insights
-print("\nDECOMPOSITION INSIGHTS:")
-print("-" * 30)
-for asset, result in decomposition_results.items():
-    if result:
-        print(f"\n{asset} ({result['model']} model):")
-        print(f"  • Trend Strength: {result['trend_strength']:.3f}")
-        print(f"  • Seasonal Strength: {result['seasonal_strength']:.3f}")
-        
-        if result['trend_strength'] > 0.6:
-            print(f"    → Strong trend component dominates")
-        elif result['trend_strength'] > 0.3:
-            print(f"    → Moderate trend component")
-        else:
-            print(f"    → Weak trend component")
-            
-        if result['seasonal_strength'] > 0.3:
-            print(f"    → Notable seasonal patterns")
-        else:
-            print(f"    → Minimal seasonality")
+## Bitcoin
+
+::: {.panel-tabset}
+
+### Time Series Plot
+```{r}
+#| warning: false
+plot_ts_with_trend("Bitcoin")
+cat("\nComponent analysis (Bitcoin):\n")
+component_analysis_print("Bitcoin")
 ```
 
-```{python}
-# %%
-# 4. ACF AND PACF ANALYSIS
-print("\n\n4. AUTOCORRELATION ANALYSIS (ACF/PACF)")
-print("-" * 50)
-
-def plot_acf_pacf(data, asset_name, lags=40):
-    """Plot ACF and PACF for stationarity analysis"""
-    clean_data = data.dropna()
-    
-    fig, axes = plt.subplots(2, 1, figsize=(15, 8))
-    fig.suptitle(f'{asset_name} - Autocorrelation Analysis', fontsize=14)
-    
-    # ACF
-    plot_acf(clean_data, ax=axes[0], lags=lags, alpha=0.05)
-    axes[0].set_title('Autocorrelation Function (ACF)')
-    axes[0].grid(True, alpha=0.3)
-    
-    # PACF
-    plot_pacf(clean_data, ax=axes[1], lags=lags, alpha=0.05)
-    axes[1].set_title('Partial Autocorrelation Function (PACF)')
-    axes[1].grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.show()
-    
-    # Analyze ACF pattern for stationarity
-    acf_values = []
-    for lag in range(1, min(21, len(clean_data)//4)):
-        acf_val = clean_data.autocorr(lag=lag)
-        acf_values.append(acf_val)
-    
-    return acf_values
-
-# ACF/PACF Analysis for main assets
-acf_results = {}
-for asset in ['Bitcoin', 'SP500']:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        print(f"\nAnalyzing autocorrelations for {asset}...")
-        acf_values = plot_acf_pacf(data, asset)
-        acf_results[asset] = acf_values
-
-# ACF Interpretation
-print("\nAUTOCORRELATION INTERPRETATION:")
-print("-" * 30)
-for asset, acf_vals in acf_results.items():
-    if acf_vals:
-        print(f"\n{asset}:")
-        print(f"  • ACF(1): {acf_vals[0]:.3f}")
-        print(f"  • ACF(5): {acf_vals[4]:.3f}")
-        print(f"  • ACF(10): {acf_vals[9]:.3f}")
-        
-        # Stationarity assessment from ACF
-        if acf_vals[0] > 0.9:
-            stationarity = "Non-stationary (strong trend/unit root)"
-        elif acf_vals[0] > 0.7:
-            stationarity = "Likely non-stationary (trending)"
-        elif acf_vals[0] > 0.5:
-            stationarity = "Borderline stationary"
-        else:
-            stationarity = "Likely stationary"
-        
-        print(f"  • Stationarity Assessment: {stationarity}")
-        
-        # Check for slow decay (non-stationarity indicator)
-        decay_rate = (acf_vals[0] - acf_vals[9]) / 10
-        print(f"  • ACF Decay Rate: {decay_rate:.4f}")
-        if decay_rate < 0.02:
-            print(f"    → Very slow decay suggests non-stationarity")
-
-# %%
-# 5. AUGMENTED DICKEY-FULLER STATIONARITY TEST
-print("\n\n5. STATIONARITY TESTING (Augmented Dickey-Fuller)")
-print("-" * 50)
-
-def adf_test(data, asset_name):
-    """Perform Augmented Dickey-Fuller test"""
-    clean_data = data.dropna()
-    
-    # Perform ADF test
-    adf_result = adfuller(clean_data, autolag='AIC')
-    
-    print(f"\n{asset_name} - ADF Test Results:")
-    print(f"  • ADF Statistic: {adf_result[0]:.4f}")
-    print(f"  • p-value: {adf_result[1]:.4f}")
-    print(f"  • Critical Values:")
-    for key, value in adf_result[4].items():
-        print(f"    - {key}: {value:.4f}")
-    
-    # Interpretation
-    if adf_result[1] < 0.05:
-        conclusion = "STATIONARY (reject null hypothesis)"
-        stationary = True
-    else:
-        conclusion = "NON-STATIONARY (fail to reject null hypothesis)"
-        stationary = False
-    
-    print(f"  • Conclusion: {conclusion}")
-    
-    return stationary, adf_result
-
-# Test stationarity for main assets
-stationarity_results = {}
-for asset in ['Bitcoin', 'SP500']:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        is_stationary, adf_result = adf_test(data, asset)
-        stationarity_results[asset] = {
-            'stationary': is_stationary,
-            'adf_stat': adf_result[0],
-            'p_value': adf_result[1]
-        }
-
-# %%
-# 6. MAKING SERIES STATIONARY (IF NEEDED)
-print("\n\n6. STATIONARITY TRANSFORMATION")
-print("-" * 50)
-
-def make_stationary(data, asset_name):
-    """Apply transformations to make series stationary"""
-    transformations = {}
-    
-    # Original data
-    transformations['original'] = data.dropna()
-    
-    # First difference
-    first_diff = data.diff().dropna()
-    transformations['first_diff'] = first_diff
-    
-    # Log transformation (if all values positive)
-    if (data > 0).all():
-        log_data = np.log(data).dropna()
-        transformations['log'] = log_data
-        
-        # Log difference
-        log_diff = log_data.diff().dropna()
-        transformations['log_diff'] = log_diff
-    
-    # Second difference (if needed)
-    second_diff = first_diff.diff().dropna()
-    transformations['second_diff'] = second_diff
-    
-    # Test stationarity for each transformation
-    print(f"\nStationarity tests for {asset_name} transformations:")
-    print("-" * 40)
-    
-    results = {}
-    for transform_name, transform_data in transformations.items():
-        if len(transform_data) > 10:  # Ensure enough data
-            adf_result = adfuller(transform_data, autolag='AIC')
-            is_stationary = adf_result[1] < 0.05
-            
-            results[transform_name] = {
-                'data': transform_data,
-                'stationary': is_stationary,
-                'adf_stat': adf_result[0],
-                'p_value': adf_result[1]
-            }
-            
-            status = "✓ STATIONARY" if is_stationary else "✗ Non-stationary"
-            print(f"  {transform_name:12} | ADF: {adf_result[0]:7.3f} | p-value: {adf_result[1]:.4f} | {status}")
-    
-    return results
-
-# Apply transformations to non-stationary series
-transformation_results = {}
-for asset in ['Bitcoin', 'SP500']:
-    if asset in price_data.columns:
-        if not stationarity_results.get(asset, {}).get('stationary', True):
-            print(f"\n{asset} is non-stationary. Applying transformations...")
-            transform_results = make_stationary(price_data[asset], asset)
-            transformation_results[asset] = transform_results
-            
-            # Plot transformations
-            fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-            fig.suptitle(f'{asset} - Stationarity Transformations', fontsize=14)
-            
-            plot_data = [
-                ('original', 'Original Series'),
-                ('first_diff', 'First Difference'),
-                ('log', 'Log Transform') if 'log' in transform_results else ('second_diff', 'Second Difference'),
-                ('log_diff', 'Log Difference') if 'log_diff' in transform_results else ('first_diff', 'First Difference (again)')
-            ]
-            
-            positions = [(0,0), (0,1), (1,0), (1,1)]
-            
-            for i, (transform_name, title) in enumerate(plot_data):
-                if transform_name in transform_results:
-                    row, col = positions[i]
-                    data = transform_results[transform_name]['data']
-                    
-                    axes[row, col].plot(data.index, data, linewidth=1)
-                    axes[row, col].set_title(f'{title}')
-                    axes[row, col].grid(True, alpha=0.3)
-                    
-                    # Add stationarity result
-                    is_stat = transform_results[transform_name]['stationary']
-                    status_color = 'green' if is_stat else 'red'
-                    status_text = 'Stationary' if is_stat else 'Non-stationary'
-                    
-                    axes[row, col].text(0.02, 0.95, status_text, transform=axes[row, col].transAxes,
-                                       bbox=dict(boxstyle="round,pad=0.3", facecolor=status_color, alpha=0.3))
-            
-            plt.tight_layout()
-            plt.show()
-
-# %%
-# 7. MOVING AVERAGE SMOOTHING ANALYSIS
-print("\n\n7. MOVING AVERAGE SMOOTHING")
-print("-" * 50)
-
+### Moving Average Smoothing
+```{r}
+#| warning: false
+moving_average_panel("Bitcoin")
 ```
 
-```{python}
-
-def moving_average_analysis(data, asset_name, windows=[5, 20, 60, 120]):
-    """Analyze different moving average windows"""
-    
-    fig, axes = plt.subplots(2, 1, figsize=(15, 10))
-    fig.suptitle(f'{asset_name} - Moving Average Smoothing Analysis', fontsize=14)
-    
-    # Plot original data
-    axes[0].plot(data.index, data, label='Original', alpha=0.7, linewidth=1)
-    
-    # Calculate and plot moving averages
-    ma_data = {}
-    colors = ['red', 'green', 'blue', 'purple', 'orange']
-    
-    for i, window in enumerate(windows):
-        if len(data) > window:
-            ma = data.rolling(window=window, center=True).mean()
-            ma_data[f'MA_{window}'] = ma
-            
-            axes[0].plot(ma.index, ma, label=f'MA-{window}', 
-                        linewidth=2, color=colors[i % len(colors)])
-    
-    axes[0].set_title('Original Series with Moving Averages')
-    axes[0].set_ylabel('Value')
-    axes[0].legend()
-    axes[0].grid(True, alpha=0.3)
-    
-    # Plot MA comparison (normalized)
-    for i, window in enumerate(windows):
-        if f'MA_{window}' in ma_data:
-            ma_normalized = ma_data[f'MA_{window}'] / ma_data[f'MA_{window}'].mean()
-            axes[1].plot(ma_normalized.index, ma_normalized, 
-                        label=f'MA-{window} (normalized)', 
-                        linewidth=2, color=colors[i % len(colors)])
-    
-    axes[1].set_title('Normalized Moving Averages Comparison')
-    axes[1].set_ylabel('Normalized Value')
-    axes[1].set_xlabel('Date')
-    axes[1].legend()
-    axes[1].grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.show()
-    
-    # Calculate smoothing effects
-    print(f"\nMoving Average Analysis for {asset_name}:")
-    print("-" * 30)
-    
-    for window in windows:
-        if len(data) > window:
-            ma = data.rolling(window=window, center=True).mean()
-            
-            # Calculate variance reduction
-            original_var = data.var()
-            ma_var = ma.var()
-            var_reduction = (original_var - ma_var) / original_var * 100
-            
-            # Calculate correlation with original
-            correlation = data.corr(ma)
-            
-            print(f"  MA-{window:3d}: Variance reduction: {var_reduction:5.1f}% | Correlation: {correlation:.3f}")
-    
-    return ma_data
-
-# Apply moving average analysis
-ma_results = {}
-for asset in ['Bitcoin', 'SP500']:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        print(f"\nAnalyzing moving averages for {asset}...")
-        ma_data = moving_average_analysis(data, asset)
-        ma_results[asset] = ma_data
-
-# %%
-# 8. EDA SUMMARY AND CONCLUSIONS
-print("\n\n8. EDA SUMMARY AND CONCLUSIONS")
-print("=" * 60)
-
-print("\nSTATIONARITY SUMMARY:")
-print("-" * 30)
-for asset in ['Bitcoin', 'SP500']:
-    if asset in stationarity_results:
-        result = stationarity_results[asset]
-        status = "STATIONARY" if result['stationary'] else "NON-STATIONARY"
-        print(f"{asset:10}: {status} (p-value: {result['p_value']:.4f})")
-        
-        if not result['stationary']:
-            print(f"           → Requires differencing for ARIMA modeling")
-        else:
-            print(f"           → Ready for stationary time series models")
-
-print("\nKEY FINDINGS:")
-print("-" * 30)
-
-# Bitcoin Analysis
-if 'Bitcoin' in price_data.columns:
-    btc_data = price_data['Bitcoin'].dropna()
-    btc_returns = returns['Bitcoin'].dropna()
-    
-    print(f"\nBITCOIN:")
-    print(f"  • Highly volatile asset (daily std: {btc_returns.std():.4f})")
-    print(f"  • Strong upward trend over sample period")
-    print(f"  • Non-stationary in levels, stationary in first differences")
-    print(f"  • Shows clustering of volatility (GARCH effects)")
-    print(f"  • Limited traditional seasonality (24/7 trading)")
-    
-    # Weekend effect
-    if len(btc_returns) > 100:
-        btc_weekday = btc_returns[btc_returns.index.dayofweek < 5].mean()
-        btc_weekend = btc_returns[btc_returns.index.dayofweek >= 5].mean()
-        print(f"  • Weekend effect: {(btc_weekend - btc_weekday)*100:.3f}% difference")
-
-# S&P 500 Analysis
-if 'SP500' in price_data.columns:
-    sp_data = price_data['SP500'].dropna()
-    sp_returns = returns['SP500'].dropna()
-    
-    print(f"\nS&P 500:")
-    print(f"  • Moderate volatility (daily std: {sp_returns.std():.4f})")
-    print(f"  • Consistent upward trend with periodic corrections")
-    print(f"  • Non-stationary in levels, stationary in returns")
-    print(f"  • Classical market patterns (volatility clustering)")
-    print(f"  • Traditional business cycle seasonality")
-
-# Cross-asset relationships
-if 'Bitcoin' in returns.columns and 'SP500' in returns.columns:
-    btc_sp_corr = returns['Bitcoin'].corr(returns['SP500'])
-    print(f"\nCROSS-ASSET RELATIONSHIPS:")
-    print(f"  • Bitcoin-S&P 500 correlation: {btc_sp_corr:.3f}")
-    
-    if btc_sp_corr > 0.3:
-        print(f"    → Bitcoin shows moderate positive correlation with stocks")
-        print(f"    → Suggests bitcoin behaving as 'risk asset' during sample period")
-    else:
-        print(f"    → Bitcoin shows low correlation with traditional markets")
-        print(f"    → Maintains alternative asset characteristics")
-
-print(f"\nMODELING IMPLICATIONS:")
-print("-" * 30)
-print(f"• ARIMA/SARIMA models: Suitable for differenced price series")
-print(f"• GARCH models: Essential for volatility modeling")
-print(f"• VAR models: Can explore cross-asset spillovers")
-print(f"• Deep Learning: May capture non-linear relationships")
-print(f"• Regime-switching models: Could model crisis periods")
-
-print(f"\nDATA QUALITY ASSESSMENT:")
-print("-" * 30)
-for asset in ['Bitcoin', 'SP500', 'VIX']:
-    if asset in price_data.columns:
-        data = price_data[asset].dropna()
-        missing_pct = (len(price_data) - len(data)) / len(price_data) * 100
-        print(f"• {asset}: {len(data)} observations, {missing_pct:.1f}% missing")
-
-print(f"\nNEXT STEPS:")
-print("-" * 30)
-print(f"1. Univariate TS Models: ARIMA on differenced series")
-print(f"2. Multivariate Models: VAR for spillover analysis")
-print(f"3. Volatility Models: GARCH for risk modeling")
-print(f"4. Deep Learning: LSTM for complex patterns")
-print(f"5. Regime Models: Markov-switching for crisis detection")
-
-print(f"\n" + "=" * 60)
-print("EDA COMPLETE - Ready for Time Series Modeling")
-print("=" * 60)
+### Lag Plots
+```{r}
+#| warning: false
+create_lag_plots("Bitcoin")
 ```
 
-```{python}
-# %%
+### ACF & PACF
+```{r}
+#| warning: false
+plot_acf_pacf("Bitcoin")
+```
 
-print("\n" + "="*80)
-print("DETAILED EDA INTERPRETATIONS AND DISCUSSION")
-print("="*80)
+### Dickey Fuller Test
+```{r}
+#| warning: false
+adf_print("Bitcoin")
+```
 
-print("\n1. TIME SERIES COMPONENT ANALYSIS")
-print("-" * 50)
+### Stationary
+```{r}
+#| warning: false
+make_stationary("Bitcoin")
+```
 
-print("""
-BITCOIN CHARACTERISTICS:
-• TREND: Strong upward trend (slope: 34.7) - Bitcoin appreciated dramatically 2019-2025
-• VARIATION: High coefficient of variation (0.779) indicates extreme volatility
-• SEASONALITY: Multiplicative type with variance ratio 9.44
-  → Higher prices lead to proportionally higher volatility (classic crypto behavior)
-  → Minimal traditional seasonality (0.036 strength) due to 24/7 trading
+:::
 
-S&P 500 CHARACTERISTICS:
-• TREND: Steady upward trend (slope: 1.94) - typical bull market behavior
-• VARIATION: Moderate coefficient of variation (0.241) - stable compared to Bitcoin
-• SEASONALITY: Additive type with variance ratio 1.99
-  → Volatility remains relatively constant across price levels
-  → Some seasonal patterns (0.186 strength) from business cycles
 
-VIX (FEAR INDEX) CHARACTERISTICS:
-• TREND: Slight downward trend (-0.003) - markets became less fearful over period
-• VARIATION: Moderate coefficient (0.381) but spikes during crises
-• SEASONALITY: Highly multiplicative (ratio: 19.87) - fear spikes create extreme volatility
-""")
+## S&P 500
 
-print("\n2. LAG PLOT INSIGHTS: PERSISTENCE AND MEMORY")
-print("-" * 50)
+::: {.panel-tabset}
 
-print("""
-WHAT THE LAG PLOTS REVEAL:
+### Time Series Plot
+```{r}
+#| warning: false
+plot_ts_with_trend("SP500")
+cat("\nComponent analysis (S&P 500):\n")
+component_analysis_print("SP500")
+```
 
-Bitcoin Lag Analysis:
-• 1-day correlation: 0.999 = Extreme persistence
-• 7-day correlation: 0.994 = Memory effects persist for a week
-• 30-day correlation: 0.971 = Strong monthly momentum
+### Moving Average Smoothing
+```{r}
+#| warning: false
+moving_average_panel("SP500")
+```
 
-S&P 500 Lag Analysis:  
-• 1-day correlation: 0.999 = Similar extreme persistence
-• 7-day correlation: 0.993 = Weekly momentum effects
-• 30-day correlation: 0.972 = Monthly trend persistence
+### Lag Plots
+```{r}
+#| warning: false
+create_lag_plots("SP500")
+```
 
-FINANCIAL INTERPRETATION:
-• Both assets show "random walk" behavior - today's price best predicts tomorrow's
-• High autocorrelations indicate STRONG NON-STATIONARITY
-• This persistence creates profitable momentum strategies
-• Markets exhibit "herding" and trend-following behavior
-""")
+### ACF & PACF
+```{r}
+#| warning: false
+plot_acf_pacf("SP500")
+```
 
-print("\n3. DECOMPOSITION ANALYSIS: WHAT DRIVES PRICE MOVEMENTS")
-print("-" * 50)
+### Dickey Fuller Test
+```{r}
+#| warning: false
+adf_print("SP500")
+```
 
-print("""
-TREND COMPONENT DOMINANCE:
-• Bitcoin trend strength: 0.951 (95% of price movement is trend)
-• S&P 500 trend strength: 0.973 (97% of price movement is trend)
-• Both are HEAVILY trend-driven assets
+### Stationary
+```{r}
+#| warning: false
+make_stationary("SP500")
+```
 
-SEASONAL COMPONENT ANALYSIS:
-• Bitcoin seasonal strength: 0.036 (minimal seasonality)
-  → 24/7 trading eliminates traditional calendar effects
-  → Regulatory events matter more than seasons
-  
-• S&P 500 seasonal strength: 0.186 (some seasonality)
-  → "January effect," "sell in May," earnings seasons
-  → Traditional business cycle patterns
+:::
 
-RESIDUAL PATTERNS:
-• Large residual spikes during crisis periods (COVID, FTX, SVB)
-• These "shock" periods cannot be predicted by trend/seasonal models
-• Suggests need for regime-switching or volatility models
-""")
 
-print("\n4. ACF/PACF ANALYSIS: CONFIRMING NON-STATIONARITY")
-print("-" * 50)
+## NASDAQ
 
-print("""
-AUTOCORRELATION EVIDENCE:
+::: {.panel-tabset}
 
-Bitcoin ACF Pattern:
-• ACF(1): 0.999 - Nearly perfect 1-day correlation
-• Very slow decay rate: 0.0008 - classic "unit root" signature
-• PACF shows single large spike at lag 1, then cuts off
-• Pattern indicates: Random walk with drift (ARIMA with d=1)
+### Time Series Plot
+```{r}
+#| warning: false
+plot_ts_with_trend("NASDAQ")
+cat("\nComponent analysis (NASDAQ):\n")
+component_analysis_print("NASDAQ")
+```
 
-S&P 500 ACF Pattern:
-• ACF(1): 0.999 - Identical non-stationary behavior  
-• Decay rate: 0.0008 - confirms unit root hypothesis
-• PACF similar to Bitcoin - single spike pattern
-• Interpretation: Both assets follow random walks
+### Moving Average Smoothing
+```{r}
+#| warning: false
+moving_average_panel("NASDAQ")
+```
 
-VISUAL vs STATISTICAL CONSISTENCY:
-• ACF plots clearly show non-stationarity (slow decay)
-• This matches what we see in trending price charts
-• Statistical tests will confirm this visual evidence
-""")
+### Lag Plots
+```{r}
+#| warning: false
+create_lag_plots("NASDAQ")
+```
 
-print("\n5. STATIONARITY TESTING: STATISTICAL CONFIRMATION")
-print("-" * 50)
+### ACF & PACF
+```{r}
+#| warning: false
+plot_acf_pacf("NASDAQ")
+```
 
-print("""
-AUGMENTED DICKEY-FULLER RESULTS:
+### Dickey Fuller Test
+```{r}
+#| warning: false
+adf_print("NASDAQ")
+```
 
-Original Series (Prices):
-• Bitcoin p-value: 0.9598 → FAIL to reject null (non-stationary)
-• S&P 500 p-value: 0.9479 → FAIL to reject null (non-stationary)
-• Both series have unit roots - cannot use in standard models
+### Stationary
+```{r}
+#| warning: false
+make_stationary("NASDAQ")
+```
 
-First Differences (Returns):
-• Bitcoin p-value: 0.0000 → REJECT null (stationary!)
-• S&P 500 p-value: 0.0000 → REJECT null (stationary!)
-• Differencing successfully removes the unit root
+:::
 
-DOES THIS SUPPORT ACF ANALYSIS?
-YES - Perfect agreement between visual and statistical tests:
-• ACF showed slow decay → ADF confirms unit root
-• First differences show white noise-like behavior
-• This validates using ARIMA(p,1,q) models for both assets
-""")
 
-print("\n6. MAKING SERIES STATIONARY: TRANSFORMATION SUCCESS")
-print("-" * 50)
+## USD INDEX
 
-print("""
-TRANSFORMATION EFFECTIVENESS:
+::: {.panel-tabset}
 
-Before Differencing:
-• Trending prices with unit roots
-• ACF decay extremely slow
-• Cannot model with standard techniques
+### Time Series Plot
+```{r}
+#| warning: false
+plot_ts_with_trend("USD")
+cat("\nComponent analysis (USD):\n")
+component_analysis_print("USD")
+```
 
-After First Differencing:
-• Returns series become stationary
-• ACF shows rapid decay to zero
-• Ready for ARIMA, GARCH, VAR modeling
+### Moving Average Smoothing
+```{r}
+#| warning: false
+moving_average_panel("USD")
+```
 
-FINANCIAL MEANING:
-• Price levels are non-stationary (random walks)
-• Price CHANGES (returns) are stationary
-• This is fundamental to finance theory:
-  → Prices have memory and trends
-  → Returns are more predictable and modelable
-  → Risk models focus on return volatility, not price volatility
-""")
+### Lag Plots
+```{r}
+#| warning: false
+create_lag_plots("USD")
+```
 
-print("\n7. MOVING AVERAGE ANALYSIS: SIGNAL vs NOISE")
-print("-" * 50)
+### ACF & PACF
+```{r}
+#| warning: false
+plot_acf_pacf("USD")
+```
 
-print("""
-SMOOTHING WINDOW EFFECTS:
+### Dickey Fuller Test
+```{r}
+#| warning: false
+adf_print("USD")
+```
 
-Short-term MA (5-day):
-• Bitcoin variance reduction: 0.6% - minimal smoothing
-• Captures short-term trading noise
-• Still highly correlated (1.000) with original
+### Stationary
+```{r}
+#| warning: false
+make_stationary("USD")
+```
 
-Medium-term MA (20-day):
-• Bitcoin variance reduction: 2.8% - modest smoothing  
-• Popular trading signal (20-day moving average)
-• Correlation: 0.998 - tracks major moves
+:::
 
-Long-term MA (60-120 day):
-• Bitcoin variance reduction: 18.4% - significant smoothing
-• Reveals underlying trends clearly
-• Correlation: 0.989 - filters out most noise
 
-PATTERN IDENTIFICATION:
-• Short MAs: React quickly to price changes (more false signals)
-• Long MAs: Lag price changes but give cleaner trend signals
-• Crossover strategies use multiple MA timeframes
-• Bitcoin needs longer windows due to higher volatility
-""")
+## VIX
 
-print("\n8. BUSINESS IMPLICATIONS AND MODELING ROADMAP")
-print("-" * 50)
+::: {.panel-tabset}
 
-print("""
-KEY INSIGHTS FOR FINANCIAL MODELING:
+### Time Series Plot
+```{r}
+#| warning: false
+plot_ts_with_trend("VIX")
+cat("\nComponent analysis (VIX):\n")
+component_analysis_print("VIX")
+```
 
-RISK MANAGEMENT:
-• Both assets show extreme price persistence
-• Volatility clustering evident in residuals  
-• GARCH models essential for risk measurement
-• VaR calculations must account for fat tails
+### Moving Average Smoothing
+```{r}
+#| warning: false
+moving_average_panel("VIX")
+```
 
-TRADING STRATEGIES:
-• High autocorrelations suggest momentum strategies work
-• Moving average crossovers have statistical basis
-• Mean reversion unlikely (prices don't return to average)
-• Trend-following more appropriate than contrarian strategies
+### Lag Plots
+```{r}
+#| warning: false
+create_lag_plots("VIX")
+```
 
-PORTFOLIO CONSTRUCTION:
-• Bitcoin correlation with S&P 500 varies over time
-• Crisis periods show increased correlation (diversification fails)
-• Need regime-switching models for dynamic hedging
-• Traditional portfolio theory assumptions violated
+### ACF & PACF
+```{r}
+#| warning: false
+plot_acf_pacf("VIX")
+```
 
-MODELING SEQUENCE:
-1. ARIMA(p,1,q) for basic price forecasting
-2. GARCH for volatility modeling and risk
-3. VAR for cross-asset spillover effects  
-4. Regime-switching for crisis detection
-5. Deep learning for non-linear patterns
-""")
+### Dickey Fuller Test
+```{r}
+#| warning: false
+adf_print("VIX")
+```
 
-print("\n9. DATA QUALITY AND LIMITATIONS")
-print("-" * 50)
+### Stationary
+```{r}
+#| warning: false
+make_stationary("VIX")
+```
 
-print("""
-STRENGTHS OF ANALYSIS:
-• High-frequency daily data (2400+ observations)
-• Multiple asset classes for comparison
-• Official FRED data sources (reliable)
-• Consistent time period across all series
-• Real market events captured (COVID, FTX, etc.)
+:::
 
-LIMITATIONS TO ACKNOWLEDGE:
-• Bitcoin data only from 2019 (limited crypto history)
-• Structural breaks not formally tested
-• Weekend effects not fully explored for S&P 500
-• Regulatory changes not explicitly modeled
-• Survivorship bias (Bitcoin survived, others didn't)
+```{r}
+#| warning: false
+cat("\nEDA SUMMARY AND CONCLUSIONS\n")
+cat(strrep("=", 60), "\n")
 
-ROBUSTNESS CHECKS NEEDED:
-• Test on different sample periods
-• Include more traditional assets
-• Account for transaction costs
-• Consider liquidity constraints
-• Model microstructure effects
-""")
+# Stationarity summary (levels)
 
-print("\n" + "="*80)
-print("CONCLUSION: EDA PROVIDES SOLID FOUNDATION FOR ADVANCED MODELING")
-print("="*80)
+assets <- c("Bitcoin","SP500","VIX")
+cat("\nSTATIONARITY (Levels):\n")
+for (a in assets) {
+res <- try(tseries::adf.test(stats::na.omit(price_data[[a]]), alternative="stationary"), silent=TRUE)
+if (inherits(res,"try-error")) next
+status <- ifelse(res$p.value < 0.05, "STATIONARY", "NON-STATIONARY")
+cat(sprintf("  %-8s : %s (p=%.4f)\n", a, status, res$p.value))
+}
 
-print("""
-The exploratory data analysis reveals that both Bitcoin and traditional financial 
-markets exhibit classic non-stationary behavior requiring careful modeling approaches:
+# Basic vol & correlations on returns (where available)
 
-✓ Confirmed non-stationarity in price levels
-✓ Achieved stationarity through first differencing  
-✓ Identified strong trend components with minimal seasonality
-✓ Discovered high persistence and momentum effects
-✓ Found evidence of volatility clustering requiring GARCH models
-✓ Established need for regime-switching during crisis periods
+if (all(c("Bitcoin_ret","SP500_ret") %in% colnames(returns))) {
+cat("\nKEY FINDINGS:\n")
+btc_sd <- sd(returns$Bitcoin_ret); sp_sd <- sd(returns$SP500_ret)
+cat(sprintf("  • Bitcoin daily std: %.4f | S&P 500 daily std: %.4f\n", btc_sd, sp_sd))
+r_b_s  <- cor(returns$Bitcoin_ret, returns$SP500_ret, use="complete.obs")
+cat(sprintf("  • BTC–S&P 500 correlation (daily returns): %.3f\n", r_b_s))
+if (r_b_s > 0.3) {
+cat("    → Moderate positive comovement; BTC behaving as a risk asset in-sample\n")
+} else {
+cat("    → Low comovement; BTC retains alternative characteristics\n")
+}
+}
 
-This analysis provides the statistical foundation needed for building sophisticated
-time series models that can capture the complex dynamics of modern financial markets.
+cat("\nModeling implications:\n")
+cat("  • Use differenced/log-differenced series for ARIMA/SARIMA\n")
+cat("  • Consider GARCH for volatility clustering\n")
+cat("  • Cross-asset work (VAR) can follow once univariate models are set\n")
+cat(strrep("=", 60), "\n")
 
-NEXT STEPS: Ready to proceed with ARIMA/SARIMA univariate modeling.
-""")
 ```

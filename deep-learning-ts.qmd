@@ -1,3 +1,255 @@
 ---
 title: "Deep Learning for TS"
+code-fold: true
 ---
+
+## Deep Learning — Bitcoin Forecasting
+
+::: {.panel-tabset}
+
+
+### Data Preparation
+
+```{r}
+#| warning: false
+#| message: false
+
+library(quantmod)
+library(tidyverse)
+library(keras)
+library(tensorflow)
+
+start_date <- as.Date("2019-01-01")
+end_date   <- as.Date("2025-09-18")
+
+load_fred_data <- function(symbol, start, end) {
+  tryCatch(
+    getSymbols(symbol, src = "FRED", from = start, to = end,
+               auto.assign = FALSE),
+    error = function(e) { cat("FAILED:", symbol, "\n"); NULL }
+  )
+}
+
+# Load assets
+sp500_data  <- load_fred_data("SP500", start_date, end_date)
+vix_data    <- load_fred_data("VIXCLS", start_date, end_date)
+btc_data    <- load_fred_data("CBBTCUSD", start_date, end_date)
+nasdaq_data <- load_fred_data("NASDAQCOM", start_date, end_date)
+usd_data    <- load_fred_data("DTWEXBGS", start_date, end_date)
+
+# -------------------------------
+# FIXED: correct merge
+# merge.zoo() requires unnamed args, so we rename after
+# -------------------------------
+price_data <- merge(
+  btc_data,
+  sp500_data,
+  vix_data,
+  nasdaq_data,
+  usd_data
+)
+
+# Set column names manually
+colnames(price_data) <- c("Bitcoin", "SP500", "VIX", "NASDAQ", "USD")
+
+# Convert to tibble and clean
+price_data <- price_data |> 
+  fortify.zoo() |> 
+  as_tibble() |> 
+  drop_na()
+
+# -------------------------------
+# FIXED: ensure Bitcoin is numeric
+# -------------------------------
+price_data$Bitcoin <- as.numeric(price_data$Bitcoin)
+
+# Compute Bitcoin log returns
+btc_ret <- diff(log(price_data$Bitcoin))
+btc_ret <- btc_ret[!is.na(btc_ret)]
+
+length(btc_ret)
+```
+
+
+```{r}
+#| warning: false
+#| message: false
+
+# Scale (standardization)
+btc_scaled <- scale(btc_ret)
+
+# Convert to numeric vector
+y <- as.numeric(btc_scaled)
+
+# Sequence parameters
+lookback <- 30     # 30-day window
+horizon  <- 1      # predict next day
+
+# Function to create sequences
+make_sequences <- function(series, lookback) {
+  X <- list()
+  Y <- list()
+  for(i in seq(lookback, length(series)-1)) {
+    X[[length(X)+1]] <- series[(i-lookback+1):i]
+    Y[[length(Y)+1]] <- series[i+1]
+  }
+  X <- array(unlist(X), dim=c(length(X), lookback, 1))
+  Y <- array(unlist(Y), dim=c(length(Y), 1))
+  return(list(X=X, Y=Y))
+}
+
+seqs <- make_sequences(y, lookback)
+
+# Train/validation split (80/20)
+n <- dim(seqs$X)[1]
+train_idx <- floor(0.8*n)
+
+X_train <- seqs$X[1:train_idx,,]
+y_train <- seqs$Y[1:train_idx]
+
+X_val <- seqs$X[(train_idx+1):n,,]
+y_val <- seqs$Y[(train_idx+1):n]
+```
+
+
+```{r}
+#| warning: false
+#| message: false
+
+es <- callback_early_stopping(
+  monitor="val_loss",
+  patience=5,
+  restore_best_weights=TRUE
+)
+```
+
+### RNN Model
+
+```{r}
+#| warning: false
+#| message: false
+
+rnn_model <- keras_model_sequential() |>
+  layer_simple_rnn(32, input_shape=c(lookback,1), return_sequences=FALSE) |>
+  layer_dropout(0.2) |>
+  layer_dense(1)
+
+rnn_model %>% compile(
+  optimizer="adam",
+  loss="mse",
+  metrics=list("mse")
+)
+
+history_rnn <- rnn_model %>% fit(
+  X_train, y_train,
+  validation_data=list(X_val, y_val),
+  epochs=30,
+  batch_size=32,
+  callbacks=list(es),
+  verbose=0
+)
+
+# Predictions + RMSE
+pred_rnn <- rnn_model %>% predict(X_val)
+rmse_rnn <- sqrt(mean((pred_rnn - y_val)^2))
+rmse_rnn
+```
+
+### GRU Model
+
+```{r}
+#| warning: false
+#| message: false
+
+gru_model <- keras_model_sequential() |>
+  layer_gru(32, input_shape=c(lookback,1), return_sequences=FALSE) |>
+  layer_dropout(0.2) |>
+  layer_dense(1)
+
+gru_model %>% compile(
+  optimizer="adam",
+  loss="mse",
+  metrics=list("mse")
+)
+
+history_gru <- gru_model %>% fit(
+  X_train, y_train,
+  validation_data=list(X_val, y_val),
+  epochs=30,
+  batch_size=32,
+  callbacks=list(es),
+  verbose=0
+)
+
+pred_gru <- gru_model %>% predict(X_val)
+rmse_gru <- sqrt(mean((pred_gru - y_val)^2))
+rmse_gru
+```
+
+
+
+### LSTM Model
+```{r}
+#| warning: false
+#| message: false
+
+lstm_model <- keras_model_sequential() |>
+  layer_lstm(32, input_shape=c(lookback,1), return_sequences=FALSE) |>
+  layer_dropout(0.2) |>
+  layer_dense(1)
+
+lstm_model %>% compile(
+  optimizer="adam",
+  loss="mse",
+  metrics=list("mse")
+)
+
+history_lstm <- lstm_model %>% fit(
+  X_train, y_train,
+  validation_data=list(X_val, y_val),
+  epochs=30,
+  batch_size=32,
+  callbacks=list(es),
+  verbose=0
+)
+
+pred_lstm <- lstm_model %>% predict(X_val)
+rmse_lstm <- sqrt(mean((pred_lstm - y_val)^2))
+rmse_lstm
+```
+
+
+### Forecast Comparison Plot
+
+```{r}
+#| warning: false
+#| message: false
+library(ggplot2)
+
+val_dates <- tail(price_data$Date, length(y_val))
+
+plot_df <- tibble(
+  Date = val_dates,
+  Actual = as.numeric(y_val),
+  RNN = as.numeric(pred_rnn),
+  GRU = as.numeric(pred_gru),
+  LSTM = as.numeric(pred_lstm)
+)
+
+ggplot(plot_df, aes(Date)) +
+  geom_line(aes(y=Actual, color="Actual"), linewidth=0.8) +
+  geom_line(aes(y=LSTM, color="LSTM"), alpha=0.8) +
+  geom_line(aes(y=GRU, color="GRU"), alpha=0.6) +
+  geom_line(aes(y=RNN, color="RNN"), alpha=0.4) +
+  labs(title="Bitcoin Returns: Actual vs Deep Learning Forecasts",
+       y="Scaled Returns") +
+  theme_minimal()
+```
+
+
+
+### RMSE Summary Table
+
+
+### Interpretation
+
