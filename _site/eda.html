@@ -983,11 +983,10 @@ Conclusion: STATIONARY (reject H0)</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">EDA SUMMARY AND CONCLUSIONS</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"EDA SUMMARY AND CONCLUSIONS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>
-EDA SUMMARY AND CONCLUSIONS</code></pre>
+<pre><code>EDA SUMMARY AND CONCLUSIONS</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -1025,9 +1024,9 @@ STATIONARITY (Levels):</code></pre>
 <span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a>r_b_s  <span class="ot">&lt;-</span> <span class="fu">cor</span>(returns<span class="sc">$</span>Bitcoin_ret, returns<span class="sc">$</span>SP500_ret, <span class="at">use=</span><span class="st">"complete.obs"</span>)</span>
 <span id="cb87-8"><a href="#cb87-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  • BTC–S&amp;P 500 correlation (daily returns): %.3f</span><span class="sc">\n</span><span class="st">"</span>, r_b_s))</span>
 <span id="cb87-9"><a href="#cb87-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (r_b_s <span class="sc">&gt;</span> <span class="fl">0.3</span>) {</span>
-<span id="cb87-10"><a href="#cb87-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"    → Moderate positive comovement; BTC behaving as a risk asset in-sample</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb87-10"><a href="#cb87-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"    → Moderate positive comovement; BTC behaving as a risk asset in-sample"</span>)</span>
 <span id="cb87-11"><a href="#cb87-11" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb87-12"><a href="#cb87-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"    → Low comovement; BTC retains alternative characteristics</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb87-12"><a href="#cb87-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"    → Low comovement; BTC retains alternative characteristics"</span>)</span>
 <span id="cb87-13"><a href="#cb87-13" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb87-14"><a href="#cb87-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>

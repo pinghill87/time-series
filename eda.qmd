@@ -495,7 +495,7 @@ make_stationary("VIX")
 
 ```{r}
 #| warning: false
-cat("\nEDA SUMMARY AND CONCLUSIONS\n")
+cat("EDA SUMMARY AND CONCLUSIONS")
 
 # Stationarity summary (levels)
 
@@ -517,9 +517,9 @@ cat(sprintf("  • Bitcoin daily std: %.4f | S&P 500 daily std: %.4f\n", btc_sd,
 r_b_s  <- cor(returns$Bitcoin_ret, returns$SP500_ret, use="complete.obs")
 cat(sprintf("  • BTC–S&P 500 correlation (daily returns): %.3f\n", r_b_s))
 if (r_b_s > 0.3) {
-cat("    → Moderate positive comovement; BTC behaving as a risk asset in-sample\n")
+cat("    → Moderate positive comovement; BTC behaving as a risk asset in-sample")
 } else {
-cat("    → Low comovement; BTC retains alternative characteristics\n")
+cat("    → Low comovement; BTC retains alternative characteristics")
 }
 }
 
