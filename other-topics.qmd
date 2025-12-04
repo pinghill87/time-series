@@ -4,8 +4,6 @@ code-fold: true
 ---
 
 ```{r}
-#1. Load Bitcoin Data (Self-Contained Block)
-#| label: load-btc
 #| warning: false
 #| message: false
 
@@ -38,9 +36,8 @@ btc_returns <- btc_df |>
 Bitcoin returns remain very noisy with frequent spikes both up and down. The plot shows a cluster of heavier negative returns around late 2022, but outside of that, the series behaves in its typical volatile fashion.
 
 ```{r}
-#2. Create Intervention Variables
-#| label: its-intervention
 #| warning: false
+#| message: false
 
 intervention_date <- as.Date("2022-11-08")  # FTX collapse
 
@@ -56,11 +53,8 @@ its_df <- btc_returns |>
 ```
 
 ```{r}
-# 3. Plot Bitcoin Returns with Intervention Line
-#| label: its-plot
 #| warning: false
-#| fig.width: 10
-#| fig.height: 5
+#| message: false
 
 ggplot(its_df, aes(Date, Bitcoin_ret)) +
   geom_line(color="steelblue", alpha=0.8) +
@@ -83,9 +77,8 @@ Overall, Bitcoin simply returns to its usual noisy, mean-reverting behavior afte
 
 
 ```{r}
-#4. Fit Interrupted Time Series Regression Model
-#| label: its-model
 #| warning: false
+#| message: false
 
 its_model <- lm(
   Bitcoin_ret ~ time_index + intervention + time_after_intervention,
@@ -117,9 +110,8 @@ There is no statistical evidence that the FTX collapse created a persistent shif
 
 
 ```{r}
-#5. Pre-Intervention vs Post-Intervention Trend Lines
-#| label: its-trendlines
 #| warning: false
+#| message: false
 #| fig.width: 10
 #| fig.height: 5
 
@@ -142,9 +134,8 @@ ggplot(its_df, aes(Date, Bitcoin_ret)) +
 ```
 
 ```{r}
-#6. Plot Mean Levels Before & After (Boxplot)
-#| label: its-boxplot
 #| warning: false
+#| message: false
 #| fig.width: 8
 #| fig.height: 5
 
@@ -172,9 +163,8 @@ This matches the regression:
 the event did not shift the average return or the variance in a meaningful way.
 
 ```{r}
-#7. Optional: Residual Diagnostics for ITS Model
-#| label: its-diagnostics
 #| warning: false
+#| message: false
 #| fig.width: 10
 #| fig.height: 6
 
@@ -184,4 +174,5 @@ par(mfrow=c(1,1))
 
 ```
 
-The FTX collapse produced temporary turbulence in Bitcoin returns but did not cause any significant long-run shift in the average return or trend. Bitcoin’s underlying return behavior remained essentially unchanged after the event.
+
+The FTX collapse caused a temporary volatility spike but no meaningful long-run shift in Bitcoin’s return levels or trend. Regression coefficients for level change and slope change are not statistically significant, and pre-/post-event distributions look nearly identical. Overall, Bitcoin quickly reverted to its normal noisy behavior.

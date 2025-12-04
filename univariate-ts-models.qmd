@@ -6,11 +6,15 @@ execute:
   freeze: auto
 ---
 
+## Data Preparation
+
+::: {.panel-tabset}
+
+### Data Loading
 ```{r}
 #| warning: false
 #| message: false
 
-cat("Loading financial data...\n")
 
 library(quantmod)
 library(tidyverse)
@@ -50,7 +54,7 @@ USD     = usd_data
 )
 merge_list <- merge_list[!sapply(merge_list, is.null)]
 
-cat("Loaded:", names(merge_list), "\n")
+
 
 # Merge to zoo
 
@@ -62,7 +66,6 @@ price_data <- fortify.zoo(price_zoo)
 colnames(price_data) <- c("Date", names(merge_list))
 price_data <- price_data |> na.omit()
 
-cat(nrow(price_data), "rows loaded.\n")
 
 # Differenced data function
 
@@ -73,11 +76,26 @@ diff(log(price_data[[asset]])) |> na.omit()
 }
 ```
 
+
+
+
+We collect daily financial data for **Bitcoin**, **S&P 500**, **NASDAQ Composite**, **VIX**, and the **USD Index** using FRED.  
+A safe-loading function ensures the script continues even if a series temporarily fails to download.
+
+After loading all assets, the valid series are merged into a unified `zoo` object and converted into a clean data frame with:
+
+- **`r nrow(price_data)` observations**
+- **5 financial variables**
+- **Daily frequency (2019–2025)**
+
+This provides a unified dataset for classical time-series modeling and EDA.
+
+### Modeling Setup
+
 ```{r}
 #| warning: false
 #| message: false
 
-cat("Fitting ARIMA + SARIMA models ONCE per asset...\n")
 
 assets <- names(merge_list)
 
@@ -86,35 +104,63 @@ sarima_models <- list()
 
 for (a in assets) {
 series <- get_diff_series(a)
-cat("  Fitting ARIMA for", a, "\n")
+
 arima_models[[a]] <- auto.arima(series, stepwise=TRUE, approximation=TRUE)
 
-cat("  Fitting SARIMA for", a, "\n")
 sarima_models[[a]] <- auto.arima(series, seasonal=TRUE,
 stepwise=TRUE, approximation=TRUE)
 }
 
-cat("Model fitting complete.\n")
 
 ```
 
----
+For each asset, we fit:
 
-## HELPER FUNCTIONS  
+- **ARIMA** (non-seasonal)  
+- **SARIMA** (seasonal)  
 
+using `auto.arima()` with stepwise and approximation enabled for efficiency.  
+Models are fit **once per asset** and stored in lists for fast re-use across:
+
+- ACF/PACF analysis  
+- Stationarity tests  
+- Forecast plots  
+- Seasonal decomposition  
+- Cross-validation using `tsCV()`  
+
+By organizing the workflow into helper functions, we streamline diagnostics, forecasting, and model comparison across all five financial series.
+
+
+### Helper Functions
 
 ```{r}
 #| warning: false
 #| message: false
 
 plot_original_and_diff <- function(asset) {
-par(mfrow=c(2,1))
-plot(price_data$Date, price_data[[asset]], type="l",
-main=paste(asset, "- Original"), col="steelblue")
-plot(get_diff_series(asset), type="l",
-main=paste(asset, "- First Difference"), col="red")
-par(mfrow=c(1,1))
+  
+  # Extract series
+  original <- price_data[[asset]]
+  dates    <- price_data$Date
+  diff_ser <- get_diff_series(asset)
+  
+  # Layout
+  par(mfrow = c(2, 1), mar = c(4, 4, 3, 1))
+  
+  # --- Original price plot ---
+  plot(dates, original, type = "l", col = "steelblue",
+       main = paste(asset, "- Original Series"),
+       xlab = "Date", ylab = "Price Level")
+  
+  # --- First difference plot (log returns) ---
+  plot(diff_ser, type = "l", col = "red",
+       main = paste(asset, "- Log Returns (First Difference)"),
+       xlab = "Index", ylab = "Log Return")
+  
+  # Reset layout
+  par(mfrow = c(1, 1))
 }
+
 
 run_stationarity <- function(asset) {
 print(adf.test(get_diff_series(asset)))
@@ -176,7 +222,47 @@ mean(e^2, na.rm=TRUE)
 
 ```
 
+### What These Helper Functions Do
 
+The following helper functions streamline the ARIMA/SARIMA workflow by wrapping common analysis steps into reusable tools:
+
+- **`plot_original_and_diff()`**  
+  Plots the raw price series and its first-differenced log returns to visualize stationarity and volatility changes.
+
+- **`run_stationarity()`**  
+  Runs the Augmented Dickey–Fuller (ADF) test on the differenced series to confirm stationarity before modeling.
+
+- **`plot_acf_pacf()`**  
+  Produces ACF and PACF plots of the return series, helping identify potential ARIMA orders.
+
+- **`run_arima_models()`**  
+  Prints the fitted ARIMA model for a selected asset.
+
+- **`run_arima_diagnostics()`**  
+  Displays residual diagnostics for the ARIMA model (autocorrelation, Ljung–Box tests).
+
+- **`forecast_arima_asset()`**  
+  Generates a 30-day ARIMA forecast with confidence intervals.
+
+- **`compare_benchmarks()`**  
+  Compares ARIMA forecasts to simple alternatives: Naive and Seasonal Naive models.
+
+- **`run_sarima_models()`**  
+  Prints the asset’s fitted SARIMA model (seasonal version).
+
+- **`forecast_sarima_asset()`**  
+  Produces a 30-day SARIMA forecast for comparison with ARIMA.
+
+- **`seasonality_analysis()`**  
+  Performs STL decomposition to examine seasonal effects in the differenced series.
+
+- **`cross_validate_sarima()`**  
+  Performs fast one-step-ahead cross-validation using a fixed SARIMA model (no repeated auto.arima calls).
+
+Together, these utilities enable fast inspection, diagnostics, and forecasting for all assets without rewriting code for each analysis.
+
+
+:::
 
 ## Univariate Time Series Analysis
 
@@ -186,56 +272,89 @@ mean(e^2, na.rm=TRUE)
 
 #### 1. Time Series + First Difference
 ```{r}
+#| warning: false
+#| message: false
+#| 
 plot_original_and_diff("Bitcoin")
 ```
 
 #### 2. Stationarity
 ```{r}
+#| warning: false
+#| message: false
+#| 
 run_stationarity("Bitcoin")
 ```
 
 #### 3. ACF & PACF
 ```{r}
+#| warning: false
+#| message: false
+
 plot_acf_pacf("Bitcoin")
 ```
 
 #### 4. ARIMA
 ```{r}
+#| warning: false
+#| message: false
+
 run_arima_models("Bitcoin")
 ```
 
 #### 5. Diagnostics
 ```{r}
+#| warning: false
+#| message: false
+
 run_arima_diagnostics("Bitcoin")
 ```
 
 #### 6. Forecast
 ```{r}
+#| warning: false
+#| message: false
+
 forecast_arima_asset("Bitcoin")
 ```
 
 #### 7. Benchmarks
 ```{r}
+#| warning: false
+#| message: false
+
 compare_benchmarks("Bitcoin")
 ```
 
 #### 8. SARIMA
 ```{r}
+#| warning: false
+#| message: false
+
 run_sarima_models("Bitcoin")
 ```
 
 #### 9. SARIMA Forecast
 ```{r}
+#| warning: false
+#| message: false
+
 forecast_sarima_asset("Bitcoin")
 ```
 
 #### 10. Seasonality
 ```{r}
+#| warning: false
+#| message: false
+
 seasonality_analysis("Bitcoin")
 ```
 
 #### 11. Cross Validation
 ```{r}
+#| warning: false
+#| message: false
+
 cross_validate_sarima("Bitcoin")
 ```
 
@@ -249,56 +368,89 @@ cross_validate_sarima("Bitcoin")
 
 #### 1. Time Series + First Difference
 ```{r}
+#| warning: false
+#| message: false
+
 plot_original_and_diff("SP500")
 ```
 
 #### 2. Stationarity
 ```{r}
+#| warning: false
+#| message: false
+
 run_stationarity("SP500")
 ```
 
 #### 3. ACF & PACF
 ```{r}
+#| warning: false
+#| message: false
+
 plot_acf_pacf("SP500")
 ```
 
 #### 4. ARIMA
 ```{r}
+#| warning: false
+#| message: false
+
 run_arima_models("SP500")
 ```
 
 #### 5. Diagnostics
 ```{r}
+#| warning: false
+#| message: false
+
 run_arima_diagnostics("SP500")
 ```
 
 #### 6. Forecast
 ```{r}
+#| warning: false
+#| message: false
+
 forecast_arima_asset("SP500")
 ```
 
 #### 7. Benchmarks
 ```{r}
+#| warning: false
+#| message: false
+
 compare_benchmarks("SP500")
 ```
 
 #### 8. SARIMA
 ```{r}
+#| warning: false
+#| message: false
+
 run_sarima_models("SP500")
 ```
 
 #### 9. SARIMA Forecast
 ```{r}
+#| warning: false
+#| message: false
+
 forecast_sarima_asset("SP500")
 ```
 
 #### 10. Seasonality
 ```{r}
+#| warning: false
+#| message: false
+
 seasonality_analysis("SP500")
 ```
 
 #### 11. Cross Validation
 ```{r}
+#| warning: false
+#| message: false
+
 cross_validate_sarima("SP500")
 ```
 :::
@@ -308,56 +460,90 @@ cross_validate_sarima("SP500")
 
 #### 1. Time Series + First Difference
 ```{r}
+#| warning: false
+#| message: false
+
 plot_original_and_diff("NASDAQ")
 ```
 
 #### 2. Stationarity
 ```{r}
+#| warning: false
+#| message: false
+
 run_stationarity("NASDAQ")
 ```
 
 #### 3. ACF & PACF
 ```{r}
+#| warning: false
+#| message: false
+
 plot_acf_pacf("NASDAQ")
 ```
 
 #### 4. ARIMA
 ```{r}
+#| warning: false
+#| message: false
+
+
 run_arima_models("NASDAQ")
 ```
 
 #### 5. Diagnostics
 ```{r}
+#| warning: false
+#| message: false
+
 run_arima_diagnostics("NASDAQ")
 ```
 
 #### 6. Forecast
 ```{r}
+#| warning: false
+#| message: false
+
 forecast_arima_asset("NASDAQ")
 ```
 
 #### 7. Benchmarks
 ```{r}
+#| warning: false
+#| message: false
+
 compare_benchmarks("NASDAQ")
 ```
 
 #### 8. SARIMA
 ```{r}
+#| warning: false
+#| message: false
+
 run_sarima_models("NASDAQ")
 ```
 
 #### 9. SARIMA Forecast
 ```{r}
+#| warning: false
+#| message: false
+
 forecast_sarima_asset("NASDAQ")
 ```
 
 #### 10. Seasonality
 ```{r}
+#| warning: false
+#| message: false
+
 seasonality_analysis("NASDAQ")
 ```
 
 #### 11. Cross Validation
 ```{r}
+#| warning: false
+#| message: false
+
 cross_validate_sarima("NASDAQ")
 ```
 :::
@@ -368,56 +554,82 @@ cross_validate_sarima("NASDAQ")
 
 #### 1. Time Series + First Difference
 ```{r}
+#| warning: false
+#| message: false
+
 plot_original_and_diff("VIX")
 ```
 
 #### 2. Stationarity
 ```{r}
+#| warning: false
+#| message: false
+
 run_stationarity("VIX")
 ```
 
 #### 3. ACF & PACF
 ```{r}
+#| warning: false
+#| message: false
+
 plot_acf_pacf("VIX")
 ```
 
 #### 4. ARIMA
 ```{r}
+#| warning: false
+#| message: false
+
 run_arima_models("VIX")
 ```
 
 #### 5. Diagnostics
 ```{r}
+#| warning: false
+#| message: false
 run_arima_diagnostics("VIX")
 ```
 
 #### 6. Forecast
 ```{r}
+#| warning: false
+#| message: false
 forecast_arima_asset("VIX")
 ```
 
 #### 7. Benchmarks
 ```{r}
+#| warning: false
+#| message: false
 compare_benchmarks("VIX")
 ```
 
 #### 8. SARIMA
 ```{r}
+#| warning: false
+#| message: false
 run_sarima_models("VIX")
 ```
 
 #### 9. SARIMA Forecast
 ```{r}
+#| warning: false
+#| message: false
 forecast_sarima_asset("VIX")
 ```
 
 #### 10. Seasonality
 ```{r}
+#| warning: false
+#| message: false
 seasonality_analysis("VIX")
 ```
 
 #### 11. Cross Validation
 ```{r}
+#| warning: false
+#| message: false
 cross_validate_sarima("VIX")
 ```
 :::
@@ -428,58 +640,83 @@ cross_validate_sarima("VIX")
 
 #### 1. Time Series + First Difference
 ```{r}
+#| warning: false
+#| message: false
 plot_original_and_diff("USD")
 ```
 
 #### 2. Stationarity
 ```{r}
+#| warning: false
+#| message: false
 run_stationarity("USD")
 ```
 
 #### 3. ACF & PACF
 ```{r}
+#| warning: false
+#| message: false
 plot_acf_pacf("USD")
 ```
 
 #### 4. ARIMA
 ```{r}
+#| warning: false
+#| message: false
 run_arima_models("USD")
 ```
 
 #### 5. Diagnostics
 ```{r}
+#| warning: false
+#| message: false
 run_arima_diagnostics("USD")
 ```
 
 #### 6. Forecast
 ```{r}
+#| warning: false
+#| message: false
 forecast_arima_asset("USD")
 ```
 
 #### 7. Benchmarks
 ```{r}
+#| warning: false
+#| message: false
 compare_benchmarks("USD")
 ```
 
 #### 8. SARIMA
 ```{r}
+#| warning: false
+#| message: false
 run_sarima_models("USD")
 ```
 
 #### 9. SARIMA Forecast
 ```{r}
+#| warning: false
+#| message: false
 forecast_sarima_asset("USD")
 ```
 
 #### 10. Seasonality
 ```{r}
+#| warning: false
+#| message: false
 seasonality_analysis("USD")
 ```
 
 #### 11. Cross Validation
 ```{r}
+#| warning: false
+#| message: false
 cross_validate_sarima("USD")
+
 ```
+
 :::
 
+All return series show minimal autocorrelation, consistent with financial market efficiency. Bitcoin fits a simple ARMA(1,0), SPX fits ARMA(2,1), VIX requires a more complex ARMA(3,4), and USD behaves like pure noise. In short, daily returns are almost unpredictable, and models capture only very small short-term dynamics.
 

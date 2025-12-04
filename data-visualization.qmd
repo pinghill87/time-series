@@ -1,1050 +1,656 @@
 ---
 title: "Data Visualization"
 code-fold: true
-format: html
+format:
+  html:
+    toc: true
+    toc-depth: 2
 ---
+
+## Data Preperation
+
+::: {.panel-tabset}
+
+### Data Loading
+
 ```{r}
 #| warning: false
 #| message: false
 
-# Install pheatmap if not already installed
-# Load required libraries
+# Core libraries
 library(tidyverse)
 library(quantmod)
-library(plotly)
 library(lubridate)
 library(zoo)
+library(plotly)
 library(pheatmap)
 
-cat("Loading financial data...\n")
 
-# Date range
 start_date <- as.Date("2019-01-01")
-end_date <- Sys.Date()
+end_date   <- Sys.Date()
 
-# Working FRED series
-working_series <- list(
-  SP500 = "SP500",
-  VIX = "VIXCLS",
-  NASDAQ = "NASDAQCOM",
-  Oil_WTI = "DCOILWTICO",
-  USD_Index = "DTWEXBGS",
-  Treasury_10Y = "DGS10",
-  Treasury_2Y = "DGS2",
-  Treasury_3M = "DGS3MO",
-  Treasury_1Y = "DGS1",
-  Unemployment = "UNRATE",
-  Fed_Rate = "FEDFUNDS",
-  CPI = "CPIAUCSL",
-  Inflation = "T10YIE",
-  Bitcoin = "CBBTCUSD"
+fred_symbols <- c(
+  SP500   = "SP500",
+  NASDAQ  = "NASDAQCOM",
+  VIX     = "VIXCLS",
+  USD     = "DTWEXBGS",
+  Bitcoin = "CBBTCUSD",
+  CPI     = "CPIAUCSL"
 )
 
-# Download data with better error handling
-price_data_list <- list()
+price_list <- list()
 
-for (name in names(working_series)) {
-  code <- working_series[[name]]
-  cat(sprintf("Loading %s...\n", name))
-  tryCatch({
-    data <- getSymbols(code, src = "FRED", from = start_date, to = end_date, 
-                       auto.assign = FALSE, warnings = FALSE)
-    if (!is.null(data) && nrow(data) > 0) {
-      price_data_list[[name]] <- data[, 1]
-      cat(sprintf("  ✓ %s: %d observations\n", name, nrow(data)))
-    } else {
-      cat(sprintf("  ✗ %s: No data returned\n", name))
-    }
-  }, error = function(e) {
-    cat(sprintf("  ✗ Error loading %s: %s\n", name, e$message))
-  })
-}
+for (nm in names(fred_symbols)) {
+  code <- fred_symbols[[nm]]
+  cat(sprintf("  -> %s (%s)\n", nm, code))
 
-# Check if we got any data
-if (length(price_data_list) == 0) {
-  stop("No data was loaded. Check your internet connection and FRED API access.")
-}
+  x <- tryCatch(
+    getSymbols(code, src = "FRED",
+               from = start_date, to = end_date,
+               auto.assign = FALSE),
+    error = function(e) NULL
+  )
 
-# Create data frame
-price_data <- do.call(merge, price_data_list)
-colnames(price_data) <- names(price_data_list)
-
-# Remove rows where all values are NA
-price_data <- price_data[rowSums(is.na(price_data)) != ncol(price_data), ]
-
-# Calculate returns - DON'T remove all NA rows, just use na.omit on diff
-returns <- diff(log(price_data))
-# Keep returns as is - don't filter out rows with ANY NA
-
-cat(sprintf("\nData loaded successfully:\n"))
-cat(sprintf("  %d days, %d assets\n", nrow(price_data), ncol(price_data)))
-cat(sprintf("  Assets: %s\n", paste(colnames(price_data), collapse = ", ")))
-cat(sprintf("  Date range: %s to %s\n", 
-            format(start(price_data), "%Y-%m-%d"), 
-            format(end(price_data), "%Y-%m-%d")))
-cat(sprintf("  Returns: %d observations\n", nrow(returns)))
-
-# Show how many valid returns per asset
-cat("\nValid returns per asset:\n")
-for (col in colnames(returns)) {
-  valid_count <- sum(!is.na(returns[, col]))
-  cat(sprintf("  %s: %d\n", col, valid_count))
-}
-
-# Show current levels
-cat("\nCurrent levels:\n")
-for (asset in c("SP500", "VIX", "Bitcoin", "Oil_WTI")) {
-  if (asset %in% colnames(price_data)) {
-    current <- tail(na.omit(price_data[, asset]), 1)
-    cat(sprintf("  %s: %.2f\n", asset, as.numeric(current)))
+  if (!is.null(x) && nrow(x) > 0) {
+    price_list[[nm]] <- x[, 1]
+    cat(sprintf("     ✓ %d observations\n", nrow(x)))
+  } else {
+    cat("     ✗ failed to load\n")
   }
 }
+
+
+stopifnot(length(price_list) >= 2)
+
+prices_xts <- do.call(merge, price_list)
+colnames(prices_xts) <- names(price_list)
+
+# Remove dates where everything is NA
+prices_xts <- prices_xts[rowSums(is.na(prices_xts)) < ncol(prices_xts), ]
+
+# Daily log returns (pairwise NA allowed)
+returns_xts <- diff(log(prices_xts))
+
+
+
+summary_tbl <- tibble(
+  Metric = c(
+    "Number of Days",
+    "Number of Series",
+    "Assets",
+    "Date Range Start",
+    "Date Range End"
+  ),
+  Value = c(
+    nrow(prices_xts),
+    ncol(prices_xts),
+    paste(colnames(prices_xts), collapse = ", "),
+    format(start(prices_xts), "%Y-%m-%d"),
+    format(end(prices_xts), "%Y-%m-%d")
+  )
+)
+
+summary_tbl
+
 ```
+
+:::
+
+## Market Overview – Bitcoin vs Traditional Assets 
+
+::: {.panel-tabset}
+
+### Normalized Line Chart
+
 ```{r}
 #| warning: false
 #| message: false
 
-# Data Visualizations with Real Financial Data
-# Interactive Plotly Chart
+key_assets <- c("Bitcoin", "SP500", "NASDAQ", "VIX")
+available  <- intersect(key_assets, colnames(prices_xts))
 
-# Normalize key assets to base 100
-key_assets <- c("Bitcoin", "SP500", "VIX")
-available_key_assets <- key_assets[key_assets %in% colnames(price_data)]
+if (length(available) >= 2) {
 
-if (length(available_key_assets) > 0) {
-  
-  colors <- list(Bitcoin = "#FF9500", SP500 = "#1f77b4", VIX = "#d62728")
-  
-  fig <- plot_ly()
-  
-  for (asset in available_key_assets) {
-    clean_data <- na.omit(price_data[, asset])
-    
-    if (nrow(clean_data) > 0) {
-      dates <- index(clean_data)
-      values <- as.numeric(clean_data)
-      
-      if (asset == "VIX") {
-        # VIX on secondary y-axis (not normalized)
-        fig <- fig %>%
-          add_trace(
-            x = dates,
-            y = values,
-            type = "scatter",
-            mode = "lines",
-            name = "VIX Fear Index",
-            line = list(color = colors[[asset]], width = 2),
-            yaxis = "y2",
-            hovertemplate = paste0("<b>VIX</b><br>%{x}<br>Level: %{y:.1f}<extra></extra>")
-          )
-      } else {
-        # Normalize Bitcoin and S&P 500
-        normalized <- (values / values[1]) * 100
-        fig <- fig %>%
-          add_trace(
-            x = dates,
-            y = normalized,
-            type = "scatter",
-            mode = "lines",
-            name = asset,
-            line = list(color = colors[[asset]], width = 2),
-            hovertemplate = paste0("<b>", asset, "</b><br>%{x}<br>Normalized: %{y:.1f}<extra></extra>")
-          )
-      }
-    }
+  # Keep all series
+  norm_xts <- prices_xts[, available]
+
+  # Pull VIX out so it's not normalized with others
+  if ("VIX" %in% colnames(norm_xts)) {
+    vix_series <- norm_xts[, "VIX"]
+    norm_xts   <- norm_xts[, colnames(norm_xts) != "VIX"]
+  } else {
+    vix_series <- NULL
   }
-  
-  # Add major financial events
-  events <- data.frame(
-    date = as.Date(c("2020-03-12", "2020-11-09", "2021-11-10", "2022-02-24", 
-                     "2022-11-11", "2023-03-10", "2024-01-11")),
-    event = c("COVID Crash", "Vaccine Rally", "Inflation Peak", "Ukraine War",
-              "FTX Collapse", "SVB Crisis", "BTC ETF Approval"),
-    color = c("#dc2626", "#16a34a", "#ea580c", "#7c2d12", 
-              "#991b1b", "#92400e", "#16a34a")
+
+  # Normalize each series to 100
+  norm_xts <- sweep(norm_xts, 2, as.numeric(norm_xts[1, ]), "/") * 100
+
+  # NEW: separate object name
+  fig_norm <- plot_ly()
+
+  col_map <- c(Bitcoin = "#FF9500",
+               SP500   = "#1f77b4",
+               NASDAQ  = "#2ecc71")
+
+  for (nm in colnames(norm_xts)) {
+    ser <- na.omit(norm_xts[, nm])
+    fig_norm <- fig_norm |>
+      add_trace(
+        x = index(ser),
+        y = as.numeric(ser),
+        type = "scatter",
+        mode = "lines",
+        name = nm,
+        line = list(color = col_map[[nm]], width = 2)
+      )
+  }
+
+  fig_norm
+
+} else {
+  cat("Not enough assets to build overview plot.\n")
+}
+
+
+```
+
+### VIX Overlay
+```{r}
+#| warning: false
+#| message: false
+
+# Recreate normalized series (same logic as tab 1)
+
+key_assets <- c("Bitcoin", "SP500", "NASDAQ", "VIX")
+available  <- intersect(key_assets, colnames(prices_xts))
+
+if (length(available) >= 2) {
+
+  base_xts <- prices_xts[, available]
+
+  if ("VIX" %in% colnames(base_xts)) {
+    vix_series <- base_xts[, "VIX"]
+    base_xts   <- base_xts[, colnames(base_xts) != "VIX"]
+  } else {
+    vix_series <- NULL
+  }
+
+  base_xts <- sweep(base_xts, 2, as.numeric(base_xts[1, ]), "/") * 100
+
+  # Start fresh
+  fig_vix <- plot_ly()
+
+  col_map <- c(Bitcoin = "#FF9500",
+               SP500   = "#1f77b4",
+               NASDAQ  = "#2ecc71")
+
+  for (nm in colnames(base_xts)) {
+    ser <- na.omit(base_xts[, nm])
+    fig_vix <- fig_vix |>
+      add_trace(
+        x = index(ser),
+        y = as.numeric(ser),
+        type = "scatter",
+        mode = "lines",
+        name = nm,
+        line = list(color = col_map[[nm]], width = 2)
+      )
+  }
+
+  # Add VIX
+  if (!is.null(vix_series)) {
+    vix_clean <- na.omit(vix_series)
+
+    fig_vix <- fig_vix |>
+      add_trace(
+        x = index(vix_clean),
+        y = as.numeric(vix_clean),
+        type = "scatter",
+        mode = "lines",
+        name = "VIX (Fear Index)",
+        yaxis = "y2",
+        line = list(color = "#e74c3c", width = 2, dash = "dot")
+      )
+  }
+
+  # Vertical crisis events
+  events <- tibble::tibble(
+    date  = as.Date(c("2020-03-12", "2022-02-24", "2022-11-11", "2023-03-10")),
+    label = c("COVID Crash", "Ukraine War", "FTX Collapse", "SVB Crisis"),
+    color = c("#dc2626", "#f97316", "#7c2d12", "#92400e")
   )
-  
-  for (i in 1:nrow(events)) {
-    fig <- fig %>%
+
+  for (i in seq_len(nrow(events))) {
+    fig_vix <- fig_vix |>
       add_segments(
         x = events$date[i], xend = events$date[i],
         y = 0, yend = 1,
         yref = "paper",
-        line = list(color = events$color[i], width = 2, dash = "dash"),
+        line = list(color = events$color[i], width = 1.5, dash = "dash"),
         showlegend = FALSE
-      ) %>%
+      ) |>
       add_annotations(
         x = events$date[i],
-        y = 0.9,
-        yref = "paper",
-        text = events$event[i],
+        y = 0.95, yref = "paper",
+        text = events$label[i],
         textangle = 90,
-        font = list(size = 11, color = events$color[i]),
-        showarrow = FALSE
+        showarrow = FALSE,
+        font = list(size = 11, color = events$color[i])
       )
   }
-  
-  fig <- fig %>%
+
+  fig_vix <- fig_vix |>
     layout(
       title = list(
-        text = "Volatility Spillovers: Bitcoin vs Traditional Markets<br><sub>Real Market Data</sub>",
-        x = 0.5,
-        font = list(size = 18)
+        text =
+          "Bitcoin vs Traditional Markets<br><sub>Normalized to 100 at Start of Sample</sub>",
+        x = 0.5
       ),
       xaxis = list(title = "Date"),
-      yaxis = list(title = "Normalized Price (Base = 100)", side = "left"),
-      yaxis2 = list(title = "VIX Fear Index", side = "right", overlaying = "y"),
-      width = 1200,
-      height = 700,
-      template = "plotly_white",
-      hovermode = "x unified",
+      yaxis = list(title = "Index Level (2019 = 100)"),
+      yaxis2 = list(
+        title = "VIX Level",
+        overlaying = "y",
+        side = "right"
+      ),
       legend = list(
         orientation = "h",
-        yanchor = "bottom",
-        y = 1.02,
-        xanchor = "right",
-        x = 1,
-        font = list(size = 12)
+        xanchor = "center",
+        x = 0.5,
+        y = 1.05
       ),
-      margin = list(l = 80, r = 80, t = 100, b = 80)
+      hovermode = "x unified",
+      template = "plotly_white"
     )
-  
-  fig
+
+  fig_vix
+
 } else {
-  cat("No assets available for visualization\n")
+  cat("Not enough assets to build VIX overlay.\n")
 }
+
 ```
+
+:::
+
+## Correlations – BTC vs SP500, VIX, NASDAQ
+
+::: {.panel-tabset}
+
+### Rolling Correlations
+
 ```{r}
 #| warning: false
 #| message: false
+#| fig.width: 9
+#| fig.height: 5
 
-# CLEAN Line Chart - Rolling Correlations
+required_ret <- c("Bitcoin", "SP500", "VIX", "NASDAQ")
+have_ret     <- intersect(required_ret, colnames(returns_xts))
 
-# Calculate correlations
-window <- 30
+if (length(have_ret) >= 3 && nrow(returns_xts) > 60) {
 
-# Check if we have the required columns
-required_cols <- c("Bitcoin", "SP500", "VIX")
-available_cols <- required_cols[required_cols %in% colnames(returns)]
+  win <- 60
 
-if (length(available_cols) >= 2 && nrow(returns) > window) {
-  
-  btc_sp_corr <- c()
-  btc_vix_corr <- c()
-  sp_vix_corr <- c()
-  dates <- c()
-  
-  returns_df <- as.data.frame(returns)
-  returns_df$date <- index(returns)
-  
-  for (i in seq(window, nrow(returns_df), by = 3)) {
-    window_data <- returns_df[(i - window + 1):i, available_cols, drop = FALSE]
-    
-    if (sum(complete.cases(window_data)) > window / 2) {
-      corr_matrix <- cor(window_data, use = "pairwise.complete.obs")
-      
-      dates <- c(dates, as.character(returns_df$date[i]))
-      
-      if ("Bitcoin" %in% available_cols && "SP500" %in% available_cols) {
-        btc_sp_corr <- c(btc_sp_corr, corr_matrix["Bitcoin", "SP500"])
-      }
-      if ("Bitcoin" %in% available_cols && "VIX" %in% available_cols) {
-        btc_vix_corr <- c(btc_vix_corr, corr_matrix["Bitcoin", "VIX"])
-      }
-      if ("SP500" %in% available_cols && "VIX" %in% available_cols) {
-        sp_vix_corr <- c(sp_vix_corr, corr_matrix["SP500", "VIX"])
+  # Convert returns to a tidy df
+  ret_df <- returns_xts[, have_ret] |>
+    as.data.frame() |>
+    mutate(Date = index(returns_xts))
+
+  # Rolling correlation function
+  roll_corr <- function(x, y, k) {
+    out <- rep(NA_real_, length(x))
+    for (i in seq_len(length(x))) {
+      if (i >= k) {
+        seg_x <- x[(i - k + 1):i]
+        seg_y <- y[(i - k + 1):i]
+        if (sum(is.finite(seg_x) & is.finite(seg_y)) > k / 2) {
+          out[i] <- cor(seg_x, seg_y, use = "pairwise.complete.obs")
+        }
       }
     }
+    out
   }
-  
-  dates <- as.Date(dates)
-  
-  # Create clean figure
-  fig <- plot_ly()
-  
-  if (length(btc_sp_corr) > 0) {
-    fig <- fig %>%
-      add_trace(
-        x = dates, y = btc_sp_corr,
-        type = "scatter", mode = "lines",
-        name = "Bitcoin-S&P 500",
-        line = list(color = "#E74C3C", width = 2),
-        hovertemplate = "<b>Bitcoin vs S&P 500</b><br>%{x|%Y-%m-%d}<br>Correlation: %{y:.3f}<extra></extra>"
+
+  # Compute rolling correlations
+  ret_df <- ret_df |>
+    mutate(
+      BTC_SPX = roll_corr(ret_df$Bitcoin, ret_df$SP500, win),
+      BTC_VIX = roll_corr(ret_df$Bitcoin, ret_df$VIX, win),
+      BTC_NAS = roll_corr(ret_df$Bitcoin, ret_df$NASDAQ, win)
+    ) |>
+    select(Date, BTC_SPX, BTC_VIX, BTC_NAS) |>
+    pivot_longer(
+      cols = c(BTC_SPX, BTC_VIX, BTC_NAS),
+      names_to = "Pair",
+      values_to = "Correlation"
+    ) |>
+    drop_na()
+
+  # Plot
+  ggplot(ret_df, aes(Date, Correlation, color = Pair)) +
+    geom_hline(yintercept = 0, color = "grey70", linetype = "dashed") +
+    geom_line(linewidth = 1.1, alpha = 0.9) +
+    scale_color_manual(
+      values = c(
+        BTC_SPX = "#e74c3c",
+        BTC_VIX = "#3498db",
+        BTC_NAS = "#2ecc71"
+      ),
+      labels = c(
+        BTC_SPX = "BTC – S&P 500",
+        BTC_VIX = "BTC – VIX",
+        BTC_NAS = "BTC – NASDAQ"
       )
-  }
-  
-  if (length(btc_vix_corr) > 0) {
-    fig <- fig %>%
-      add_trace(
-        x = dates, y = btc_vix_corr,
-        type = "scatter", mode = "lines",
-        name = "Bitcoin-VIX",
-        line = list(color = "#3498DB", width = 2),
-        hovertemplate = "<b>Bitcoin vs VIX</b><br>%{x|%Y-%m-%d}<br>Correlation: %{y:.3f}<extra></extra>"
-      )
-  }
-  
-  if (length(sp_vix_corr) > 0) {
-    fig <- fig %>%
-      add_trace(
-        x = dates, y = sp_vix_corr,
-        type = "scatter", mode = "lines",
-        name = "S&P 500-VIX",
-        line = list(color = "#2ECC71", width = 2),
-        hovertemplate = "<b>S&P 500 vs VIX</b><br>%{x|%Y-%m-%d}<br>Correlation: %{y:.3f}<extra></extra>"
-      )
-  }
-  
-  # Add reference lines
-  if (length(dates) > 0) {
-    fig <- fig %>%
-      add_segments(x = min(dates), xend = max(dates), y = 0, yend = 0,
-                   line = list(color = "black", width = 1), showlegend = FALSE) %>%
-      add_segments(x = min(dates), xend = max(dates), y = 0.5, yend = 0.5,
-                   line = list(color = "gray", width = 1, dash = "dot"), showlegend = FALSE) %>%
-      add_segments(x = min(dates), xend = max(dates), y = -0.5, yend = -0.5,
-                   line = list(color = "gray", width = 1, dash = "dot"), showlegend = FALSE)
-    
-    fig <- fig %>%
-      layout(
-        title = "Bitcoin Correlations with Traditional Markets",
-        xaxis = list(title = "Date"),
-        yaxis = list(title = "Correlation"),
-        width = 1000,
-        height = 500,
-        template = "plotly_white",
-        showlegend = TRUE,
-        hovermode = "x unified"
-      )
-    
-    fig
-  }
-} else {
-  cat(sprintf("Insufficient data for correlation analysis. Need at least 2 assets and %d observations.\n", window))
-  cat(sprintf("Available: %s, Observations: %d\n", paste(available_cols, collapse = ", "), nrow(returns)))
-}
-```
-```{r}
-#| warning: false
-#| message: false
-
-# Rolling Correlation Heatmap
-
-window <- 30
-correlation_data <- list()
-
-assets_for_corr <- c("Bitcoin", "SP500", "VIX", "Oil_WTI")
-available_assets <- assets_for_corr[assets_for_corr %in% colnames(returns)]
-
-if (length(available_assets) >= 2 && nrow(returns) > window) {
-  
-  returns_df <- as.data.frame(returns)
-  returns_df$date <- index(returns)
-  
-  # Sample every 20 days for cleaner visualization
-  for (i in seq(window, nrow(returns_df), by = 20)) {
-    window_data <- returns_df[(i - window + 1):i, available_assets, drop = FALSE]
-    
-    if (sum(complete.cases(window_data)) > window / 2) {
-      corr_matrix <- cor(window_data, use = "pairwise.complete.obs")
-      
-      corr_row <- list(Date = returns_df$date[i])
-      
-      if ("Bitcoin" %in% available_assets && "SP500" %in% available_assets) {
-        corr_row[["BTC-SPX"]] <- corr_matrix["Bitcoin", "SP500"]
-      }
-      if ("Bitcoin" %in% available_assets && "VIX" %in% available_assets) {
-        corr_row[["BTC-VIX"]] <- corr_matrix["Bitcoin", "VIX"]
-      }
-      if ("SP500" %in% available_assets && "VIX" %in% available_assets) {
-        corr_row[["SPX-VIX"]] <- corr_matrix["SP500", "VIX"]
-      }
-      if ("Bitcoin" %in% available_assets && "Oil_WTI" %in% available_assets) {
-        corr_row[["BTC-Oil"]] <- corr_matrix["Bitcoin", "Oil_WTI"]
-      }
-      
-      correlation_data[[length(correlation_data) + 1]] <- corr_row
-    }
-  }
-  
-  if (length(correlation_data) > 0) {
-    corr_df <- do.call(rbind, lapply(correlation_data, as.data.frame))
-    corr_df$Date <- as.Date(corr_df$Date, origin = "1970-01-01")
-    
-    # Prepare data for heatmap
-    corr_matrix_plot <- as.matrix(corr_df[, -1, drop = FALSE])
-    rownames(corr_matrix_plot) <- format(corr_df$Date, "%Y-%m")
-    
-    # Create heatmap
-    pheatmap(
-      t(corr_matrix_plot),
-      color = colorRampPalette(rev(c("#B2182B", "#D6604D", "#F4A582", "#FDDBC7",
-                                       "#F7F7F7", "#D1E5F0", "#92C5DE", "#4393C3", "#2166AC")))(100),
-      cluster_rows = FALSE,
-      cluster_cols = FALSE,
-      breaks = seq(-1, 1, length.out = 101),
-      main = "Rolling 30-Day Correlations: How Asset Relationships Change Over Time\n(Red = Negative Correlation, Blue = Positive Correlation)",
-      fontsize = 10,
-      angle_col = 45,
-      border_color = NA
-    )
-    
-    # Save corr_df for next chunk
-    assign("corr_df", corr_df, envir = .GlobalEnv)
-  } else {
-    cat("Not enough correlation data points collected\n")
-  }
-} else {
-  cat(sprintf("Insufficient data. Need at least 2 assets from: %s\n", paste(assets_for_corr, collapse = ", ")))
-  cat(sprintf("Available: %s, Observations: %d\n", paste(available_assets, collapse = ", "), nrow(returns)))
-}
-```
-
-```{r}
-#| warning: false
-#| message: false
-#| fig.width: 16
-#| fig.height: 8
-
-# CLEANER Correlation Visualization with ggplot2
-
-# Check if corr_df exists from previous chunk
-if (exists("corr_df") && is.data.frame(corr_df) && nrow(corr_df) > 0) {
-  
-  # Prepare data
-  corr_long <- corr_df %>%
-    pivot_longer(cols = -Date, names_to = "Pair", values_to = "Correlation")
-  
-  # Create line chart
-  p <- ggplot(corr_long, aes(x = Date, y = Correlation, color = Pair)) +
-    geom_line(linewidth = 1.2, alpha = 0.9) +
-    geom_hline(yintercept = 0, color = "black", linetype = "solid", alpha = 0.3, linewidth = 0.5) +
-    geom_hline(yintercept = c(-0.5, 0.5), color = "gray", linetype = "dotted", alpha = 0.5) +
-    scale_color_manual(values = c("BTC-SPX" = "#E74C3C", "BTC-VIX" = "#3498DB", 
-                                   "SPX-VIX" = "#2ECC71", "BTC-Oil" = "#F39C12")) +
+    ) +
     scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-    ylim(-1, 1) +
+    coord_cartesian(ylim = c(-1, 1)) +
     labs(
-      title = "Bitcoin Correlation with Traditional Markets Over Time",
-      subtitle = "Higher Values = Bitcoin Behaves More Like Traditional Assets",
-      x = "Year",
-      y = "Correlation Coefficient",
+      title = "Rolling 60-Day Correlations",
+      subtitle = "How Bitcoin's linkage to stocks, tech, and volatility changes over time",
+      x = "Date",
+      y = "Correlation",
       color = "Asset Pair"
     ) +
     theme_minimal(base_size = 12) +
     theme(
-      plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
-      plot.subtitle = element_text(size = 12, hjust = 0.5),
       legend.position = "top",
-      panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "gray90")
+      plot.title = element_text(face = "bold")
     )
-  
-  # Add event annotations
-  events_df <- data.frame(
-    date = as.Date(c("2020-03-12", "2022-11-11", "2023-03-10")),
-    event = c("COVID", "FTX", "SVB"),
-    color = c("#DC2626", "#7C2D12", "#92400E")
-  )
-  
-  for (i in 1:nrow(events_df)) {
-    p <- p + 
-      geom_vline(xintercept = as.numeric(events_df$date[i]), 
-                 color = events_df$color[i], alpha = 0.6, linetype = "dotted", linewidth = 1) +
-      annotate("text", x = events_df$date[i], y = 0.85, 
-               label = events_df$event[i], angle = 0, size = 3.5,
-               color = events_df$color[i], fontface = "bold")
-  }
-  
-  print(p)
-  
-  # Analysis
-  cat("\nWHAT THIS CHART SHOWS:\n")
-  cat(rep("=", 50), "\n", sep = "")
-  cat("\nRED LINE (BTC-S&P 500):\n")
-  cat("  • When HIGH (+0.5 to +1.0): Bitcoin moves WITH stocks\n")
-  cat("    - Both rise and fall together\n")
-  cat("    - Bitcoin acting like a 'risk asset'\n\n")
-  
-  cat("  • When LOW (0 to -0.5): Bitcoin moves INDEPENDENTLY\n") 
-  cat("    - Bitcoin doing its own thing\n")
-  cat("    - Classic 'digital gold' behavior\n\n")
-  
-  cat("BLUE LINE (BTC-VIX):\n")
-  cat("  • When POSITIVE: Bitcoin rises when fear increases\n")
-  cat("  • When NEGATIVE: Bitcoin falls when fear increases\n\n")
-  
-  cat("GREEN LINE (S&P 500-VIX):\n")
-  cat("  • Should always be NEGATIVE (stocks fall when fear rises)\n")
-  cat("  • This validates our data is working correctly\n\n")
-  
-  # Show current values
-  cat("CURRENT CORRELATION LEVELS:\n")
-  cat(rep("-", 30), "\n", sep = "")
-  
-  for (pair in unique(corr_long$Pair)) {
-    pair_data <- corr_long %>% filter(Pair == pair) %>% pull(Correlation)
-    if (length(pair_data) > 0) {
-      recent_corr <- tail(pair_data, 1)
-      
-      interpretation <- ""
-      if (grepl("BTC-SPX", pair)) {
-        if (recent_corr > 0.3) {
-          interpretation <- "(Bitcoin acting like stocks)"
-        } else if (recent_corr < -0.1) {
-          interpretation <- "(Bitcoin contrarian to stocks)"
-        } else {
-          interpretation <- "(Bitcoin independent)"
-        }
-      }
-      
-      cat(sprintf("%s: %.3f %s\n", pair, recent_corr, interpretation))
-    }
-  }
-  
-  cat("\nKEY INSIGHT:\n")
-  cat("Bitcoin correlation with stocks INCREASES during market stress\n")
-  cat("(see spikes during COVID, FTX, SVB crises)\n")
-  
+
 } else {
-  cat("Correlation data not available for visualization\n")
+  cat("Insufficient data for rolling correlations.\n")
 }
+
+
 ```
+
+### Heatmap – Rolling Pairwise Correlations
+
 ```{r}
 #| warning: false
 #| message: false
-#| fig.width: 15
-#| fig.height: 6
 
-# VISUALIZATION 3: Weekend Effect Analysis
+heat_assets <- c("Bitcoin", "SP500", "VIX", "USD")
+heat_avail  <- intersect(heat_assets, colnames(returns_xts))
 
-if ("Bitcoin" %in% colnames(returns) && "SP500" %in% colnames(returns) && nrow(returns) > 0) {
-  
-  returns_with_day <- as.data.frame(returns)
-  returns_with_day$Date <- index(returns)
-  returns_with_day$DayOfWeek <- wday(returns_with_day$Date)
-  returns_with_day$DayName <- weekdays(returns_with_day$Date)
-  
-  # Calculate average returns by day of week
-  day_order <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
-  
-  daily_stats <- returns_with_day %>%
-    group_by(DayName) %>%
-    summarise(
-      Bitcoin = mean(.data[["Bitcoin"]], na.rm = TRUE) * 100,
-      SP500 = mean(.data[["SP500"]], na.rm = TRUE) * 100,
-      .groups = 'drop'
-    ) %>%
-    mutate(DayName = factor(DayName, levels = day_order)) %>%
-    arrange(DayName) %>%
-    filter(!is.na(Bitcoin) & !is.nan(Bitcoin) & is.finite(Bitcoin) &
-           !is.na(SP500) & !is.nan(SP500) & is.finite(SP500))
-  
-  # Check if we have valid data
-  if (nrow(daily_stats) > 0 && 
-      sum(is.finite(daily_stats$Bitcoin)) > 0 && 
-      sum(is.finite(daily_stats$SP500)) > 0) {
-    
-    # Create weekend effect visualization
-    par(mfrow = c(1, 2), mar = c(5, 4, 4, 2))
-    
-    # Bitcoin (24/7 trading)
-    colors_btc <- ifelse(daily_stats$DayName %in% c("Saturday", "Sunday"), 
-                         "lightcoral", "orange")
-    
-    btc_ylim <- range(c(daily_stats$Bitcoin, 0), na.rm = TRUE)
-    if (diff(btc_ylim) == 0) btc_ylim <- c(-0.1, 0.1)
-    
-    barplot(daily_stats$Bitcoin, 
-            names.arg = daily_stats$DayName,
-            col = colors_btc,
-            main = "Bitcoin: Average Daily Returns by Day of Week\n(24/7 Trading)",
-            ylab = "Average Return (%)",
-            las = 2,
-            ylim = btc_ylim)
-    abline(h = 0, col = "black", lwd = 1)
-    grid(NA, NULL, lty = 1, col = "gray90")
-    
-    # S&P 500 (traditional markets)
-    sp500_returns <- daily_stats$SP500
-    sp500_returns[daily_stats$DayName %in% c("Saturday", "Sunday")] <- 0
-    
-    colors_sp <- ifelse(daily_stats$DayName %in% c("Saturday", "Sunday"), 
-                        "lightcoral", "blue")
-    
-    sp_ylim <- range(c(sp500_returns, 0), na.rm = TRUE)
-    if (diff(sp_ylim) == 0) sp_ylim <- c(-0.1, 0.1)
-    
-    barplot(sp500_returns, 
-            names.arg = daily_stats$DayName,
-            col = colors_sp,
-            main = "S&P 500: Average Daily Returns by Day of Week\n(Markets Closed Weekends)",
-            ylab = "Average Return (%)",
-            las = 2,
-            ylim = sp_ylim)
-    abline(h = 0, col = "black", lwd = 1)
-    grid(NA, NULL, lty = 1, col = "gray90")
-    
-    par(mfrow = c(1, 1))
-    
-    # Save for summary
-    assign("daily_stats", daily_stats, envir = .GlobalEnv)
-    
+if (length(heat_avail) >= 2 && nrow(returns_xts) > 40) {
+
+  w <- 40  # rolling window size
+
+  ret_df <- as.data.frame(returns_xts[, heat_avail])
+  ret_df$Date <- index(returns_xts)
+
+  rows <- list()
+
+  # Rolling windows every 10 days
+  for (i in seq(w, nrow(ret_df), by = 10)) {
+
+    seg <- ret_df[(i - w + 1):i, heat_avail, drop = FALSE]
+
+    if (sum(complete.cases(seg)) > w / 2) {
+
+      cm <- cor(seg, use = "pairwise.complete.obs")
+
+      row <- list(Date = ret_df$Date[i])
+
+      # Selected pairs
+      if ("Bitcoin" %in% heat_avail && "SP500" %in% heat_avail)
+        row[["BTC_SPX"]] <- cm["Bitcoin", "SP500"]
+
+      if ("Bitcoin" %in% heat_avail && "VIX" %in% heat_avail)
+        row[["BTC_VIX"]] <- cm["Bitcoin", "VIX"]
+
+      if ("Bitcoin" %in% heat_avail && "USD" %in% heat_avail)
+        row[["BTC_USD"]] <- cm["Bitcoin", "USD"]
+
+      if ("SP500" %in% heat_avail && "VIX" %in% heat_avail)
+        row[["SPX_VIX"]] <- cm["SP500", "VIX"]
+
+      rows[[length(rows) + 1]] <- row
+    }
+  }
+
+  # -------------------------------------------------------
+  #   Build heatmap matrix
+  # -------------------------------------------------------
+  if (length(rows) > 0) {
+
+    corr_df <- do.call(rbind, lapply(rows, as.data.frame))
+    corr_df$Date <- as.Date(corr_df$Date)
+
+    mat <- as.matrix(corr_df[, -1, drop = FALSE])
+
+    # -------------------------------------------------------
+    #   FIXED X-AXIS LABELS — clean and readable
+    # -------------------------------------------------------
+    n_cols <- ncol(t(mat))
+    label_step <- 6   # show every 6th window (change to 10 or 12 if you want cleaner)
+
+    col_labels <- ifelse(
+      seq_len(n_cols) %% label_step == 0,
+      format(corr_df$Date, "%Y-%m")[seq_len(n_cols)],
+      ""
+    )
+
+    # -------------------------------------------------------
+    #   Heatmap
+    # -------------------------------------------------------
+    pheatmap(
+      t(mat),
+      cluster_rows = FALSE,
+      cluster_cols = FALSE,
+      labels_col = col_labels,
+      color = colorRampPalette(
+        rev(c("#b2182b", "#ef8a62", "#fddbc7",
+              "#f7f7f7",
+              "#d1e5f0", "#67a9cf", "#2166ac"))
+      )(100),
+      breaks = seq(-1, 1, length.out = 101),
+      main = "Rolling 40-Day Correlations Between Key Pairs",
+      angle_col = 45,
+      border_color = NA
+    )
+
   } else {
-    cat("No valid daily statistics to plot\n")
+    cat("Not enough rolling correlation windows for heatmap.\n")
   }
-  
+
 } else {
-  cat(sprintf("Cannot create weekend effect analysis. Available columns: %s\n", 
-              paste(colnames(returns), collapse = ", ")))
+  cat("Insufficient data for heatmap correlations.\n")
 }
+
 ```
+
+:::
+
+## Volatility
+
+::: {.panel-tabset}
+
+### BTC vs SP500 Vol
+
 ```{r}
 #| warning: false
 #| message: false
-#| fig.width: 15
-#| fig.height: 8
+#| fig.width: 9
+#| fig.height: 5
 
-# VISUALIZATION 4: Crisis Period Volatility Analysis
+if (all(c("Bitcoin", "SP500") %in% colnames(returns_xts))) {
 
-if ("Bitcoin" %in% colnames(returns) && "SP500" %in% colnames(returns) && nrow(returns) > 30) {
-  
-  # Calculate 30-day rolling volatility
-  vol_data <- data.frame(Date = index(returns))
-  
-  vol_data$Bitcoin <- rollapply(returns[, "Bitcoin"], width = 30, 
-                                  FUN = function(x) sd(x, na.rm = TRUE) * sqrt(252) * 100,
-                                  fill = NA, align = "right")
-  
-  vol_data$SP500 <- rollapply(returns[, "SP500"], width = 30, 
-                                FUN = function(x) sd(x, na.rm = TRUE) * sqrt(252) * 100,
-                                fill = NA, align = "right")
-  
-  # Create volatility plot
-  plot(vol_data$Date, vol_data$Bitcoin, type = "l", col = "orange", lwd = 2,
-       ylim = range(c(vol_data$Bitcoin, vol_data$SP500), na.rm = TRUE),
-       xlab = "Date", ylab = "Annualized Volatility (%)",
-       main = "Volatility Spillovers During Crisis Periods")
-  
-  lines(vol_data$Date, vol_data$SP500, col = "blue", lwd = 2)
-  
-  # Add VIX on secondary axis
-  if ("VIX" %in% colnames(price_data)) {
-    vix_ma <- rollapply(price_data[, "VIX"], width = 30, 
-                        FUN = function(x) mean(x, na.rm = TRUE),
-                        fill = NA, align = "right")
-    
-    if (sum(!is.na(vix_ma)) > 0) {
-      par(new = TRUE)
-      plot(index(vix_ma), as.numeric(vix_ma), type = "l", col = "red", lwd = 1.5, lty = 2,
-           axes = FALSE, xlab = "", ylab = "")
-      axis(4, col = "red", col.axis = "red")
-      mtext("VIX Level", side = 4, line = 3, col = "red")
+  # --- Compute vol ---
+  vol <- tibble(
+    Date = index(returns_xts),
+    BTC  = rollapply(
+      returns_xts[, "Bitcoin"], 30,
+      sd, fill = NA, align = "right"
+    ) * sqrt(252) * 100,
+    SPX  = rollapply(
+      returns_xts[, "SP500"], 30,
+      sd, fill = NA, align = "right"
+    ) * sqrt(252) * 100
+  )
+
+  # Keep only rows where at least one series is finite
+  valid <- is.finite(vol$BTC) | is.finite(vol$SPX)
+
+  if (sum(valid) == 0) {
+    cat("No finite volatility values to plot.\n")
+
+  } else {
+
+    vol_plot <- vol[valid, ]
+
+    # --- FIX: convert xts index and values to clean vectors ---
+    dates <- as.Date(vol_plot$Date)
+    btc   <- as.numeric(vol_plot$BTC)
+    spx   <- as.numeric(vol_plot$SPX)
+
+    # --- Base volatility plot ---
+    plot(
+      dates, btc,
+      type = "l", col = "orange", lwd = 2,
+      ylim = range(c(btc, spx), na.rm = TRUE),
+      main = "Crisis Volatility Spillovers (30-Day Annualized Volatility)",
+      xlab = "Date",
+      ylab = "Volatility (%)"
+    )
+
+    lines(dates, spx, col = "blue", lwd = 2)
+    grid()
+
+    # --- VIX overlay ---
+    if ("VIX" %in% colnames(prices_xts)) {
+
+      vix_ma <- rollapply(
+        prices_xts[, "VIX"], 30,
+        mean, fill = NA, align = "right"
+      )
+
+      vix_vals <- as.numeric(vix_ma)
+      vix_valid <- is.finite(vix_vals)
+
+      if (any(vix_valid)) {
+
+        # subset only finite values
+        vix_ma    <- vix_ma[vix_valid]
+        vix_dates <- as.Date(index(vix_ma))
+        vix_vals  <- as.numeric(vix_ma)
+
+        par(new = TRUE)
+
+        plot(
+          vix_dates, vix_vals,
+          type = "l", col = "red", lwd = 1.5, lty = 2,
+          axes = FALSE, xlab = "", ylab = ""
+        )
+
+        axis(4, col = "red", col.axis = "red")
+        mtext("VIX Level (30-day MA)", side = 4, line = 3, col = "red")
+      }
     }
   }
-  
-  # Highlight crisis periods
-  crisis_periods <- data.frame(
-    start = as.Date(c("2020-03-01", "2022-02-20", "2022-11-01")),
-    end = as.Date(c("2020-05-01", "2022-04-01", "2022-12-15")),
-    label = c("COVID Crisis", "Ukraine War", "FTX Collapse"),
-    color = c("red", "orange", "purple")
-  )
-  
-  for (i in 1:nrow(crisis_periods)) {
-    rect(crisis_periods$start[i], par("usr")[3], 
-         crisis_periods$end[i], par("usr")[4],
-         col = adjustcolor(crisis_periods$color[i], alpha.f = 0.2), border = NA)
-  }
-  
-  legend("topleft", 
-         legend = c("Bitcoin Volatility", "S&P 500 Volatility", "VIX (30-day MA)", 
-                    crisis_periods$label),
-         col = c("orange", "blue", "red", crisis_periods$color),
-         lty = c(1, 1, 2, rep(1, nrow(crisis_periods))),
-         lwd = 2, cex = 0.8)
-  
-  grid()
-  
+
 } else {
-  cat(sprintf("Cannot create volatility plot. Need Bitcoin and SP500 with >30 observations.\n"))
-  cat(sprintf("Available: %s, Observations: %d\n", 
-              paste(colnames(returns), collapse = ", "), nrow(returns)))
+  cat("Need Bitcoin and SP500 returns for volatility plot.\n")
 }
+
 ```
+
+
+:::
+
+## Macro Effects
+
+::: {.panel-tabset}
+
+### BTC & SP500 vs USD 
 ```{r}
 #| warning: false
 #| message: false
+#| fig.width: 9
+#| fig.height: 5
 
-# Summary Statistics
-cat("\nKEY INSIGHTS FROM REAL DATA ANALYSIS\n")
-cat(rep("=", 50), "\n", sep = "")
+if (all(c("Bitcoin", "SP500") %in% colnames(prices_xts))) {
 
-returns_df <- as.data.frame(returns)
+# Convert to monthly levels
 
-# Check if required columns exist
-if ("Bitcoin" %in% colnames(returns_df) && "SP500" %in% colnames(returns_df) && nrow(returns_df) > 0) {
-  
-  btc_vol <- sd(returns_df$Bitcoin, na.rm = TRUE) * sqrt(252) * 100
-  sp_vol <- sd(returns_df$SP500, na.rm = TRUE) * sqrt(252) * 100
-  btc_sp_corr <- cor(returns_df$Bitcoin, returns_df$SP500, use = "complete.obs")
-  
-  cat("VOLATILITY COMPARISON:\n")
-  cat(sprintf("  Bitcoin annual volatility: %.1f%%\n", btc_vol))
-  cat(sprintf("  S&P 500 annual volatility: %.1f%%\n", sp_vol))
-  cat(sprintf("  Bitcoin is %.1fx more volatile\n", btc_vol / sp_vol))
-  
-  cat("\nCORRELATION ANALYSIS:\n")
-  cat(sprintf("  Bitcoin-S&P 500: %.3f\n", btc_sp_corr))
-  
-  if ("VIX" %in% colnames(returns_df)) {
-    sp_vix_corr <- cor(returns_df$SP500, returns_df$VIX, use = "complete.obs")
-    cat(sprintf("  S&P 500-VIX: %.3f (should be negative)\n", sp_vix_corr))
-  }
-  
-  cat("\nWEEKEND EFFECTS:\n")
-  if (exists("daily_stats")) {
-    weekend_btc <- mean(daily_stats$Bitcoin[daily_stats$DayName %in% c("Saturday", "Sunday")])
-    weekday_btc <- mean(daily_stats$Bitcoin[!daily_stats$DayName %in% c("Saturday", "Sunday")])
-    cat(sprintf("  Bitcoin weekend avg: %.3f%%\n", weekend_btc))
-    cat(sprintf("  Bitcoin weekday avg: %.3f%%\n", weekday_btc))
-  }
-  
-  cat("\nMARKET LEVELS (Current):\n")
-  if ("Bitcoin" %in% colnames(price_data)) {
-    btc_current <- tail(na.omit(as.numeric(price_data[, "Bitcoin"])), 1)
-    cat(sprintf("  Bitcoin: $%.0f\n", btc_current))
-  }
-  if ("SP500" %in% colnames(price_data)) {
-    sp_current <- tail(na.omit(as.numeric(price_data[, "SP500"])), 1)
-    cat(sprintf("  S&P 500: %.0f\n", sp_current))
-  }
-  if ("VIX" %in% colnames(price_data)) {
-    vix_current <- tail(na.omit(as.numeric(price_data[, "VIX"])), 1)
-    cat(sprintf("  VIX: %.1f\n", vix_current))
-  }
-  
-  cat("\nDATA VISUALIZATION COMPLETE\n")
-  cat("Assignment 2 requirements met:\n")
-  cat("  ✓ Plotly + ggplot2/pheatmap visualizations\n")
-  cat("  ✓ Event-driven storytelling\n")
-  cat("  ✓ Weekend effects (seasonality)\n")
-  cat("  ✓ Real financial data through 2024\n")
-  
-} else {
-  cat("Required data (Bitcoin, SP500) not available for summary statistics\n")
-  cat(sprintf("Available columns: %s\n", paste(colnames(returns_df), collapse = ", ")))
-  cat(sprintf("Number of observations: %d\n", nrow(returns_df)))
-}
-```
-
-```{r}
-#| label: macro-overview-grid
-#| echo: false
-#| warning: false
-#| message: false
-#| fig.width: 12
-#| fig.height: 8
-
-suppressPackageStartupMessages({
-  library(tidyverse); library(zoo); library(lubridate)
-})
-
-stopifnot(exists("price_data"))
-
-# Convert to end-of-month levels
-m_price <- tryCatch(
-  xts::to.monthly(price_data, indexAt = "lastof", OHLC = FALSE),
-  error = function(e) stop("Failed to convert to monthly. Ensure price_data is xts.")
+m_prices <- tryCatch(
+xts::to.monthly(prices_xts[, c("Bitcoin", "SP500", "USD")],
+indexAt = "lastof", OHLC = FALSE),
+error = function(e) NULL
 )
 
-# Safe getter
-pull_named <- function(x, nm) if (nm %in% colnames(x)) x[, nm] else NULL
+if (!is.null(m_prices)) {
+btc_m <- m_prices[, "Bitcoin"]
+spx_m <- m_prices[, "SP500"]
+usd_m <- if ("USD" %in% colnames(m_prices)) m_prices[, "USD"] else NULL
 
-CPI <- pull_named(m_price, "CPI")                   # CPIAUCSL renamed to "CPI"
-UNR <- pull_named(m_price, "Unemployment")          # UNRATE
-FED <- pull_named(m_price, "Fed_Rate")              # FEDFUNDS
-DXY <- pull_named(m_price, "USD_Index")             # DTWEXBGS
-Y10 <- pull_named(m_price, "Treasury_10Y")          # DGS10
-Y02 <- pull_named(m_price, "Treasury_2Y")           # DGS2
 
-# Transforms
-CPI_yoy <- if (!is.null(CPI)) 100*(CPI/lag(CPI, 12) - 1) else NULL
-yc_10y2y_bps <- if (!is.null(Y10) && !is.null(Y02)) 100*(Y10 - Y02) else NULL
 
-# Build a monthly data frame aligned by Date
-macro_df <- tibble(Date = zoo::index(m_price))
 
-add_col <- function(df, series, name){
-  if (is.null(series)) return(df)
-  vec <- as.numeric(series[match(df$Date, zoo::index(series))])
-  df[[name]] <- vec
-  df
+m_ret <- merge(diff(log(btc_m)), diff(log(spx_m)))
+colnames(m_ret) <- c("BTC_ret", "SPX_ret")
+
+df <- tibble(
+  Date    = index(m_ret),
+  BTC_ret = as.numeric(m_ret[, "BTC_ret"]),
+  SPX_ret = as.numeric(m_ret[, "SPX_ret"])
+)
+
+if (!is.null(usd_m)) {
+  df <- df |>
+    left_join(
+      tibble(
+        Date = index(usd_m),
+        USD  = as.numeric(usd_m)
+      ),
+      by = "Date"
+    )
 }
 
-macro_df <- add_col(macro_df, CPI_yoy, "CPI YoY (%)")
-macro_df <- add_col(macro_df, UNR,        "Unemployment (%)")
-macro_df <- add_col(macro_df, FED,        "Fed Funds (%)")
-macro_df <- add_col(macro_df, DXY,        "USD Index")
-macro_df <- add_col(macro_df, yc_10y2y_bps, "10Y-2Y (bps)")
-
-# Drop columns that are entirely NA
-all_na <- vapply(macro_df, function(x) all(is.na(x)), logical(1))
-macro_df <- macro_df[, !all_na, drop = FALSE]
-
-if (ncol(macro_df) <= 1) {
-  cat("No macro series available to plot. Check CPI/Unemployment/Fed_Rate/USD_Index/Yields in price_data.\n")
-} else {
-  macro_long <- macro_df |>
-    tidyr::pivot_longer(-Date, names_to = "Series", values_to = "Value") |>
-    tidyr::drop_na()
-
-  ggplot(macro_long, aes(Date, Value)) +
-    geom_line(linewidth = 1) +
-    facet_wrap(~ Series, scales = "free_y", ncol = 2) +
-    labs(
-      title = "Macro Context (Monthly)",
-      subtitle = "Inflation, labor market, policy rate, dollar strength, and yield curve",
-      x = NULL, y = NULL
-    ) +
-    theme_minimal(base_size = 12) +
-    theme(strip.text = element_text(face = "bold"))
+z <- function(x) {
+  if (all(is.na(x)) || sd(x, na.rm = TRUE) == 0) return(rep(NA_real_, length(x)))
+  as.numeric(scale(x))
 }
 
-```
-
-```{r}
-#| label: overlay-btc-spx-vs-macro
-#| echo: false
-#| warning: false
-#| message: false
-#| fig.width: 12
-#| fig.height: 8
-
-# ---- BTC/SPX vs Macro (Monthly overlays, z-scored) ----
-suppressPackageStartupMessages({
-  library(tidyverse); library(zoo); library(lubridate)
-})
-
-# Ensure we have monthly price panel
-if (!exists("m_price")) {
-  stopifnot(exists("price_data"))
-  m_price <- tryCatch(xts::to.monthly(price_data, indexAt = "lastof", OHLC = FALSE),
-                      error = function(e) stop("to.monthly failed; ensure price_data is xts"))
-}
-
-# Monthly BTC & SPX
-m_btc <- tryCatch(xts::to.monthly(price_data[, "Bitcoin"], indexAt = "lastof", OHLC = FALSE), error = function(e) NULL)
-m_spx <- tryCatch(xts::to.monthly(price_data[, "SP500"],  indexAt = "lastof", OHLC = FALSE), error = function(e) NULL)
-
-if (is.null(m_btc) || is.null(m_spx)) {
-  cat("BTC or SP500 monthly series not available for overlay plot.\n")
-} else {
-  # Monthly returns
-  m_ret <- merge(diff(log(m_btc)), diff(log(m_spx)))
-  colnames(m_ret) <- c("BTC_mret", "SPX_mret")
-
-  # Macro series from monthly panel
-  CPI <- if ("CPI" %in% colnames(m_price)) m_price[, "CPI"] else NULL
-  DXY <- if ("USD_Index" %in% colnames(m_price)) m_price[, "USD_Index"] else NULL
-
-  CPI_yoy <- if (!is.null(CPI)) 100*(CPI/lag(CPI, 12) - 1) else NULL
-
-  # Build tibble of monthly dates & returns
-  df <- tibble(
-    Date     = zoo::index(m_ret),
-    BTC_mret = as.numeric(m_ret[, "BTC_mret"]),
-    SPX_mret = as.numeric(m_ret[, "SPX_mret"])
+df <- df |>
+  mutate(
+    BTC_z = z(BTC_ret),
+    SPX_z = z(SPX_ret),
+    USD_z = if (!is.null(usd_m)) z(USD) else NA_real_
   )
 
-  # SAFE alignment by Date with joins (no xts numeric subsetting)
-  if (!is.null(CPI_yoy)) {
-    df <- df %>%
-      left_join(tibble(Date = zoo::index(CPI_yoy),
-                       CPI_YoY = as.numeric(CPI_yoy)),
-                by = "Date")
-  }
-  if (!is.null(DXY)) {
-    df <- df %>%
-      left_join(tibble(Date = zoo::index(DXY),
-                       DXY = as.numeric(DXY)),
-                by = "Date")
-  }
-
-  # Z-score returns (handle constant vectors)
-  z <- function(x) {
-    if (all(is.na(x)) || sd(x, na.rm = TRUE) == 0) return(rep(NA_real_, length(x)))
-    as.numeric(scale(x))
-  }
-  df <- df %>% mutate(BTC_z = z(BTC_mret), SPX_z = z(SPX_mret))
-
-  # Build overlays robustly (conditionally add layers)
-  p1 <- ggplot(df, aes(Date)) +
-    geom_line(aes(y = BTC_z, color = "BTC (z)"), linewidth = 1.1) +
-    geom_line(aes(y = SPX_z, color = "S&P 500 (z)"), linewidth = 1.1, alpha = 0.7) +
-    labs(title = "Z-scored BTC & S&P vs CPI Inflation (Monthly)",
-         subtitle = "Visual co-movement only (not causality)",
-         x = NULL, y = "Z-score", color = NULL) +
-    scale_color_manual(values = c("BTC (z)" = "#FF9500", "S&P 500 (z)" = "#1f77b4",
-                                  "CPI YoY (z)" = "#7f7f7f")) +
-    theme_minimal(base_size = 12) +
-    theme(legend.position = "top")
-
-  # Add CPI layer if available & not all NA/constant
-  if ("CPI_YoY" %in% names(df) && sum(is.finite(df$CPI_YoY)) > 5 && sd(df$CPI_YoY, na.rm = TRUE) > 0) {
-    cpi_z <- (df$CPI_YoY - mean(df$CPI_YoY, na.rm = TRUE)) / sd(df$CPI_YoY, na.rm = TRUE)
-    p1 <- p1 + geom_line(aes(y = cpi_z, color = "CPI YoY (z)"), linewidth = 0.9, linetype = "dashed")
-  }
-
-  p2 <- ggplot(df, aes(Date)) +
-    geom_line(aes(y = BTC_z, color = "BTC (z)"), linewidth = 1.1) +
-    geom_line(aes(y = SPX_z, color = "S&P 500 (z)"), linewidth = 1.1, alpha = 0.7) +
-    labs(title = "Z-scored BTC & S&P vs USD Index (Monthly)",
-         subtitle = "Stronger dollar often coincides with risk-off pressure",
-         x = NULL, y = "Z-score", color = NULL) +
-    scale_color_manual(values = c("BTC (z)" = "#FF9500", "S&P 500 (z)" = "#1f77b4",
-                                  "USD Index (z)" = "#7f7f7f")) +
-    theme_minimal(base_size = 12) +
-    theme(legend.position = "top")
-
-  # Add USD Index layer if available
-  if ("DXY" %in% names(df) && sum(is.finite(df$DXY)) > 5 && sd(df$DXY, na.rm = TRUE) > 0) {
-    dxy_z <- (df$DXY - mean(df$DXY, na.rm = TRUE)) / sd(df$DXY, na.rm = TRUE)
-    p2 <- p2 + geom_line(aes(y = dxy_z, color = "USD Index (z)"), linewidth = 0.9, linetype = "dashed")
-  }
-
-  print(p1); print(p2)
-}
+ggplot(df, aes(Date)) +
+  geom_line(aes(y = BTC_z, color = "BTC (z)"), linewidth = 1) +
+  geom_line(aes(y = SPX_z, color = "S&P 500 (z)"), linewidth = 1, alpha = 0.8) +
+  geom_line(aes(y = USD_z, color = "USD Index (z)"),
+            linewidth = 0.9, linetype = "dashed", alpha = 0.8) +
+  labs(
+    title = "Bitcoin & S&P vs USD Dollar Strength (Monthly, Z-scored)",
+    subtitle = "When the dollar strengthens, risk assets often struggle",
+    x = NULL,
+    y = "Z-score (standardized units)",
+    color = NULL
+  ) +
+  scale_color_manual(
+    values = c(
+      "BTC (z)"        = "#FF9500",
+      "S&P 500 (z)"    = "#1f77b4",
+      "USD Index (z)"  = "#7f7f7f"
+    )
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
 
 
-```
-
-```{r}
-#| label: macro-scatter-loess
-#| echo: false
-#| warning: false
-#| message: false
-#| fig.width: 12
-#| fig.height: 8
-
-# ---- Association Scatters (non-causal visuals) ----
-suppressPackageStartupMessages({
-  library(tidyverse); library(zoo); library(lubridate)
-})
-
-# Ensure monthly panel exists
-if (!exists("m_price")) {
-  stopifnot(exists("price_data"))
-  m_price <- tryCatch(xts::to.monthly(price_data, indexAt = "lastof", OHLC = FALSE),
-                      error = function(e) stop("to.monthly failed; ensure price_data is xts"))
-}
-
-# Monthly BTC returns
-m_btc <- tryCatch(xts::to.monthly(price_data[, "Bitcoin"], indexAt = "lastof", OHLC = FALSE), error = function(e) NULL)
-if (is.null(m_btc)) {
-  cat("BTC monthly series not available for scatter plots.\n")
 } else {
-  BTC_mret <- diff(log(m_btc))  # monthly log returns
-
-  # Macro (monthly)
-  DXY <- if ("USD_Index" %in% colnames(m_price)) m_price[, "USD_Index"] else NULL
-  FED <- if ("Fed_Rate"  %in% colnames(m_price)) m_price[, "Fed_Rate"]  else NULL
-  CPI <- if ("CPI"       %in% colnames(m_price)) m_price[, "CPI"]       else NULL
-
-  CPI_yoy <- if (!is.null(CPI)) 100*(CPI/lag(CPI, 12) - 1) else NULL
-  dDXY    <- if (!is.null(DXY)) diff(DXY) else NULL
-  dFED    <- if (!is.null(FED)) diff(FED) else NULL
-
-  # Helper: convert an xts series to tibble(Date, value)
-  xts_to_tbl <- function(x, name) {
-    tibble(Date = zoo::index(x), !!name := as.numeric(x))
-  }
-
-  # Base DF with BTC returns
-  df <- xts_to_tbl(BTC_mret, "BTC_ret")
-
-  # Safe LEFT JOINS by Date (no xts numeric subsetting)
-  if (!is.null(dDXY))    df <- df %>% left_join(xts_to_tbl(dDXY,   "dUSD"),  by = "Date")
-  if (!is.null(dFED))    df <- df %>% left_join(xts_to_tbl(dFED,   "dFED"),  by = "Date")
-  if (!is.null(CPI_yoy)) df <- df %>% left_join(xts_to_tbl(CPI_yoy,"CPIYoY"),by = "Date")
-
-  plots <- list()
-
-  # Plot 1: Δ Fed Funds vs BTC return
-  if ("dFED" %in% names(df) && sum(is.finite(df$dFED)) > 5) {
-    p_fed <- df %>% filter(is.finite(dFED), is.finite(BTC_ret))
-    plots[["p_fed"]] <- ggplot(p_fed, aes(dFED, BTC_ret*100)) +
-      geom_point(alpha = 0.5) +
-      geom_smooth(method = "loess", se = FALSE) +
-      labs(title = "BTC Monthly Return vs Δ Fed Funds",
-           x = "Monthly change in Fed Funds (pp)", y = "BTC Monthly Return (%)") +
-      theme_minimal()
-  }
-
-  # Plot 2: Δ USD Index vs BTC return
-  if ("dUSD" %in% names(df) && sum(is.finite(df$dUSD)) > 5) {
-    p_dxy <- df %>% filter(is.finite(dUSD), is.finite(BTC_ret))
-    plots[["p_dxy"]] <- ggplot(p_dxy, aes(dUSD, BTC_ret*100)) +
-      geom_point(alpha = 0.5) +
-      geom_smooth(method = "loess", se = FALSE) +
-      labs(title = "BTC Monthly Return vs Δ USD Index",
-           x = "Monthly change in USD Index", y = "BTC Monthly Return (%)") +
-      theme_minimal()
-  }
-
-  # Plot 3: CPI YoY vs BTC return
-  if ("CPIYoY" %in% names(df) && sum(is.finite(df$CPIYoY)) > 5) {
-    p_cpi <- df %>% filter(is.finite(CPIYoY), is.finite(BTC_ret))
-    plots[["p_cpi"]] <- ggplot(p_cpi, aes(CPIYoY, BTC_ret*100)) +
-      geom_point(alpha = 0.5) +
-      geom_smooth(method = "loess", se = FALSE) +
-      labs(title = "BTC Monthly Return vs CPI YoY",
-           x = "CPI YoY (%)", y = "BTC Monthly Return (%)") +
-      theme_minimal()
-  }
-
-  if (length(plots) == 0) {
-    cat("No macro drivers available to build scatter visuals.\n")
-  } else {
-    for (nm in names(plots)) print(plots[[nm]])
-  }
+cat("Could not build monthly macro overlay.\n")
 }
-
-
-
-```
-
-```{r}
-#| label: gdp-preview
-#| echo: false
-#| warning: false
-#| message: false
-#| fig.width: 10
-#| fig.height: 4
-
-# ---- Optional: GDP Preview (Quarterly) ----
-
-# Keep GDP minimal here; you'll use it later in ARIMAX/VAR.
-
-suppressPackageStartupMessages(library(quantmod))
-
-gdptr <- tryCatch({
-gdpx <- getSymbols("GDPC1", src = "FRED", auto.assign = FALSE)
-yoy  <- 100*(gdpx/lag(gdpx, 4) - 1)  # YoY %
-xts::last(yoy, "10 years")
-}, error = function(e) NULL)
-
-if (is.null(gdptr)) {
-cat("GDP (GDPC1) not available from FRED right now; skipping preview plot.\n")
 } else {
-plot(zoo::index(gdptr), as.numeric(gdptr), type = "l", lwd = 2,
-main = "Real US GDP YoY (%) – Preview (Quarterly)",
-xlab = "", ylab = "YoY (%)", col = "black")
-abline(h = 0, col = "gray70", lty = 2)
-grid()
+cat("Need Bitcoin and SP500 price series for macro overlay.\n")
 }
 
-
 ```
 
-```
+:::

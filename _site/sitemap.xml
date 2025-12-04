@@ -2,15 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/other-topics.html</loc>
-    <lastmod>2025-11-20T01:59:23.456Z</lastmod>
+    <lastmod>2025-12-04T08:44:33.596Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/introduction.html</loc>
-    <lastmod>2025-10-24T19:08:22.825Z</lastmod>
+    <lastmod>2025-12-04T09:10:42.965Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/financial-ts-models.html</loc>
-    <lastmod>2025-12-03T20:58:17.993Z</lastmod>
+    <lastmod>2025-12-04T08:43:47.305Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/index.html</loc>
@@ -22,7 +22,7 @@
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/univariate-ts-models.html</loc>
-    <lastmod>2025-12-02T23:23:18.185Z</lastmod>
+    <lastmod>2025-12-04T08:44:36.132Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/data-sources.html</loc>
@@ -30,11 +30,11 @@
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/multivariate-ts-models.html</loc>
-    <lastmod>2025-12-03T20:52:01.894Z</lastmod>
+    <lastmod>2025-12-04T08:43:48.873Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/eda.html</loc>
-    <lastmod>2025-12-02T23:16:42.090Z</lastmod>
+    <lastmod>2025-12-04T09:15:15.872Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/about.html</loc>
@@ -46,6 +46,6 @@
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/data-visualization.html</loc>
-    <lastmod>2025-10-29T21:51:47.857Z</lastmod>
+    <lastmod>2025-12-04T06:36:22.048Z</lastmod>
   </url>
 </urlset>

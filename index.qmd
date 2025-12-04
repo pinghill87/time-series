@@ -10,57 +10,78 @@ A time series is any sequence of measurements taken at regular, equally spaced i
 Because observations are ordered in time, nearby points tend to be correlated (autocorrelation). This violates the independent-and-identically-distributed assumption behind many standard statistical methods, so naïve cross-sectional tools often mislead. Time-series work must explicitly handle dependence, trend, and seasonality—for example by differencing, seasonal adjustment, and models that use lagged values and errors (e.g., ARIMA/SARIMA, ARIMAX/SARIMAX with external drivers, VAR for multiple series, state-space/ETS, or GARCH when volatility changes over time). Analysts also watch for structural breaks (e.g., policy shifts, COVID), outliers, and missing periods, and they evaluate models with time-aware validation (rolling or blocked splits) rather than random shuffles.
 
 
-## Project Idea: Volatility Spillovers Across Asset Classes
+## Volatility Spillovers Across Asset Classes
 
-Crypto → Equity Spillovers
+Big Picture Goal
 
-Outcomes: Daily return volatility of Bitcoin, Ethereum, altcoin index, and S&P 500.
+This project investigates how major financial markets interact, focusing on whether Bitcoin, the S&P 500, the VIX (fear index), and the U.S. Dollar Index influence each other’s returns and volatility. The goal is to understand whether crypto markets transmit risk to traditional finance or primarily react to it.
 
-Covariates: Trading volume, Fed policy announcements, macro uncertainty indices.
+Analytical Framework
 
-Models: VAR-based Diebold–Yilmaz connectedness index; Interrupted Time Series (ITS) around shocks like FTX collapse or major Fed hikes.
+To answer the big-picture question, the analysis proceeds through four structured layers:
 
-Crypto → Commodities (Digital Gold Hypothesis)
+1. Exploratory Data Analysis (EDA)
 
-Outcomes: BTC–Gold return correlations, BTC–Oil volatility interactions.
+I begin by examining long-term price trends, return distributions, rolling volatilities, and pairwise correlations across Bitcoin, S&P 500, NASDAQ, VIX, and USD.
+Key diagnostic finding: Returns are stationary for all assets (post-differencing), but price levels are not.
 
-Covariates: Inflation announcements, commodity price shocks, geopolitical events.
+2. Univariate Modeling (ARIMA / SARIMA)
 
-Models: DCC-GARCH to track time-varying correlations; BEKK-GARCH for volatility transmission direction.
+Using daily returns, I estimate ARIMA models for each asset to capture their individual dynamics.
 
-Crypto → Volatility Index (Fear Gauge)
+Findings:
 
-Outcomes: Spillovers between Bitcoin volatility and the VIX index (equity “fear gauge”).
+BTC returns ≈ white noise with minimal predictability.
 
-Covariates: S&P 500 returns, macro policy shocks, crypto-specific crashes.
+SP500 and NASDAQ exhibit stronger autocorrelation, supporting ARIMA(2,0,2) and ARIMA(4,0,3).
 
-Models: Threshold-GARCH to capture nonlinear effects; VAR event studies around high-volatility windows.
+VIX is mean-reverting, best captured by ARIMA(3,0,1).
 
-Frequency Decomposition of Spillovers
+USD index behaves almost pure white noise.
 
-Outcomes: Short-run vs. long-run volatility spillovers across BTC, ETH, S&P500, Gold, and VIX.
+These models serve as a benchmark for whether multivariate models add value.
 
-Covariates: Same core series, separated into frequency bands.
+3. Multivariate Modeling (ARIMAX Spillovers)
 
-Models: Baruník–Křehlík frequency connectedness to show whether crypto influence is trader-driven (short-term) or macro-driven (long-term).
+I then test for return spillovers by regressing each asset’s returns on the others:
 
-Time-Varying Connectedness
+Bitcoin is influenced by SP500 returns (positive) and VIX (slightly negative).
 
-Outcomes: Net transmitter vs. net receiver roles of BTC and ETH during calm vs. crisis periods (COVID crash, Terra/FTX collapse, banking stress).
+S&P 500 is significantly driven by VIX (strong negative effect) and lightly by Bitcoin.
 
-Covariates: Event dummies for stress regimes.
+VIX responds strongly to SP500 (negative), but barely to BTC.
 
-Models: TVP-VAR connectedness (time-varying without rolling windows); structural break tests.
+USD shows no meaningful connection to BTC or SP500.
 
-Stablecoins and Market Stability
+Forecast comparison shows that including other assets slightly improves accuracy, supporting mild cross-market influence.
 
-Outcomes: USDT/USDC de-pegging episodes, before/after volatility in broader crypto markets.
+4. Volatility Modeling (ARCH–GARCH)
 
-Covariates: Stablecoin volume, liquidity shocks, macro stress events.
+To analyze volatility clustering:
 
-Models: Interrupted Time Series around de-peg dates; ARIMAX with stablecoin activity as an exogenous regressor.
+SP500 volatility fits ARMA(2,1)–GARCH(2,1)
+→ captures strong persistence and ARCH effects.
 
-Research Papers
+Bitcoin volatility fits ARMA(1,0)–GARCH(2,1)
+→ weaker clustering but clear volatility persistence.
+
+This framework identifies whether volatility in one market tends to spill into another.
+
+5. Event Analysis (Interrupted Time Series – FTX Collapse)
+
+Finally, I examine whether the FTX collapse created a structural break in Bitcoin behavior.
+
+Result:
+
+No statistically significant change in BTC return mean or trend after FTX.
+
+BTC experienced short-term turbulence, but no long-run shift.
+
+This suggests crypto markets absorb shocks quickly, with no persistent transformation in return behavior.
+
+
+
+## Research Papers
 
 Diebold & Yilmaz (2012): Better to Give than to Receive: Predictive Directional Measurement of Volatility Spillovers — foundational connectedness index.
 

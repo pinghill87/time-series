@@ -80,7 +80,7 @@ library(ggplot2)
 #| warning: false
 #| message: false
 
-cat("Loading financial data (BTC, SP500, VIX, USD) from FRED...\n")
+
 
 start_date <- as.Date("2019-01-01")
 end_date   <- as.Date("2025-09-18")
@@ -118,9 +118,6 @@ colnames(price_data) <- c("Date","SP500","VIX","Bitcoin","USD")
 price_data <- price_data |> arrange(Date) |> na.omit()
 }
 
-cat(sprintf("Data loaded: %d rows | columns: %s\n",
-nrow(price_data), paste(colnames(price_data), collapse=", ")))
-
 # Daily log-returns (stationary)
 
 returns <- price_data |>
@@ -132,8 +129,7 @@ USD_ret     = c(NA, diff(log(USD)))  # NEW: USD returns
 ) |>
 na.omit()
 
-cat(sprintf("Returns ready: %d rows (Bitcoin_ret, SP500_ret, VIX_ret, USD_ret)\n",
-nrow(returns)))
+
 
 ```
 
@@ -802,3 +798,5 @@ cat(sprintf("Forecasted USD level @%d: %.2f\n",
 H, tail(usd_level_path,1)))
 
 ```
+
+Cross-asset predictability is weak across all models. SPX is strongly driven by VIX (fear), but Bitcoin has only tiny, insignificant dependencies on SPX or VIX, and USD is essentially unaffected by any other asset. Overall, the equity–volatility relationship dominates, while Bitcoin and USD remain mostly independent.

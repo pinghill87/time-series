@@ -10,6 +10,11 @@ format:
     theme: cosmo
 ---
 
+## Data Preparation
+
+::: {.panel-tabset}
+
+### Data Loading
 ```{r setup}
 #| warning: false
 #| message: false
@@ -33,9 +38,6 @@ suppressPackageStartupMessages({
   library(zoo);       library(PerformanceAnalytics)
 })
 
-cat(strrep("=", 60), "\n")
-cat("EXPLORATORY DATA ANALYSIS (EDA)\n")
-cat(strrep("=", 60), "\n\n")
 ```
 
 
@@ -46,7 +48,6 @@ cat(strrep("=", 60), "\n\n")
 #| warning: false
 #| message: false
 
-cat("Loading financial data...\n")
 
 start_date <- as.Date("2019-01-01")
 end_date   <- as.Date("2025-09-18")
@@ -98,6 +99,36 @@ returns <- price_data |>
 
 
 ```
+
+
+We collect daily financial data from **2019–2025** for five key market variables:  
+**Bitcoin**, **S&P 500**, **NASDAQ Composite**, **VIX**, and the **USD Index**.  
+All series are pulled directly from the Federal Reserve Economic Data (FRED) API.
+
+After loading the data, we merge the five time series into a single dataset with a shared date index and remove any missing observations. The final dataset contains:
+
+- **`r nrow(price_data)` observations**  
+- **5 financial variables** (SP500, VIX, Bitcoin, NASDAQ, USD)  
+- **Daily frequency**  
+
+This provides a clean foundation for exploratory analysis and later forecasting tasks.
+
+### Return Calculations
+
+Because raw price levels are non-stationary, we compute **log returns** for each asset:
+
+\[
+r_t = \log(P_t) - \log(P_{t-1})
+\]
+
+This transformation stabilizes variance, removes long-term trends, and makes the series suitable for correlation, volatility, and deep learning modeling. After computing log returns and removing the initial missing row, our returns dataset contains:
+
+- **`r nrow(returns)` observations**  
+- **5 return variables** (SP500_ret, VIX_ret, Bitcoin_ret, NASDAQ_ret, USD_ret)
+
+These prepared return series form the basis for all subsequent EDA, ARIMA modeling, and deep learning models used later in the project.
+
+:::
 
 ```{r}
 #| warning: false
@@ -241,6 +272,7 @@ invisible(NULL)
 
 ```
 
+
 ## Bitcoin
 
 ::: {.panel-tabset}
@@ -249,7 +281,6 @@ invisible(NULL)
 ```{r}
 #| warning: false
 plot_ts_with_trend("Bitcoin")
-cat("\nComponent analysis (Bitcoin):\n")
 component_analysis_print("Bitcoin")
 ```
 
@@ -294,7 +325,6 @@ make_stationary("Bitcoin")
 ```{r}
 #| warning: false
 plot_ts_with_trend("SP500")
-cat("\nComponent analysis (S&P 500):\n")
 component_analysis_print("SP500")
 ```
 
@@ -339,7 +369,6 @@ make_stationary("SP500")
 ```{r}
 #| warning: false
 plot_ts_with_trend("NASDAQ")
-cat("\nComponent analysis (NASDAQ):\n")
 component_analysis_print("NASDAQ")
 ```
 
@@ -384,7 +413,6 @@ make_stationary("NASDAQ")
 ```{r}
 #| warning: false
 plot_ts_with_trend("USD")
-cat("\nComponent analysis (USD):\n")
 component_analysis_print("USD")
 ```
 
@@ -468,7 +496,6 @@ make_stationary("VIX")
 ```{r}
 #| warning: false
 cat("\nEDA SUMMARY AND CONCLUSIONS\n")
-cat(strrep("=", 60), "\n")
 
 # Stationarity summary (levels)
 
@@ -496,10 +523,7 @@ cat("    → Low comovement; BTC retains alternative characteristics\n")
 }
 }
 
-cat("\nModeling implications:\n")
-cat("  • Use differenced/log-differenced series for ARIMA/SARIMA\n")
-cat("  • Consider GARCH for volatility clustering\n")
-cat("  • Cross-asset work (VAR) can follow once univariate models are set\n")
-cat(strrep("=", 60), "\n")
 
 ```
+
+Bitcoin shows the highest volatility with frequent large spikes, while SPX is smoother, VIX is jumpy, and USD is very stable. Correlations reveal that SPX and VIX are strongly inversely related, while Bitcoin moves largely independently of the others. Overall, the assets behave as expected: equities and fear are tightly linked, crypto is noisy, and the USD is stable.

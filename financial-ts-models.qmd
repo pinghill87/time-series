@@ -670,3 +670,5 @@ show(best_garch_fit_btc)
 ```
 
 :::
+
+Volatility clustering is clearly present. SPX displays high volatility persistence (GARCH), Bitcoin reacts strongly to shocks with shorter-lived volatility, and VIX shows extreme jumpiness consistent with stress events. GARCH results confirm that returns are hard to predict, but volatility is highly structured and persistent.
