@@ -3,10 +3,36 @@ title: "Deep Learning for TS"
 code-fold: true
 ---
 
+```{r}
+#| warning: false
+#| message: false
+# Core setup: NO keras package, only tensorflow + tf$keras
+
+library(tensorflow)
+library(reticulate)
+
+# Let tensorflow manage the Python env it installed
+
+# (Usually called "r-tensorflow"; no need to force conda "base")
+
+# If you ever need: reticulate::py_config()
+
+tf <- tensorflow::tf
+keras <- tf$keras
+
+# General R libs
+
+library(quantmod)
+library(tidyverse)
+library(zoo)
+
+set.seed(123)
+
+```
+
 ## Deep Learning — Bitcoin Forecasting
 
 ::: {.panel-tabset}
-
 
 ### Data Preparation
 
@@ -14,114 +40,110 @@ code-fold: true
 #| warning: false
 #| message: false
 
-library(quantmod)
-library(tidyverse)
-library(keras)
-library(tensorflow)
-
 start_date <- as.Date("2019-01-01")
 end_date   <- as.Date("2025-09-18")
 
 load_fred_data <- function(symbol, start, end) {
-  tryCatch(
-    getSymbols(symbol, src = "FRED", from = start, to = end,
-               auto.assign = FALSE),
-    error = function(e) { cat("FAILED:", symbol, "\n"); NULL }
-  )
+tryCatch(
+getSymbols(symbol, src = "FRED", from = start, to = end,
+auto.assign = FALSE),
+error = function(e) {
+cat("FAILED:", symbol, "\n")
+NULL
+}
+)
 }
 
-# Load assets
 sp500_data  <- load_fred_data("SP500", start_date, end_date)
 vix_data    <- load_fred_data("VIXCLS", start_date, end_date)
 btc_data    <- load_fred_data("CBBTCUSD", start_date, end_date)
 nasdaq_data <- load_fred_data("NASDAQCOM", start_date, end_date)
 usd_data    <- load_fred_data("DTWEXBGS", start_date, end_date)
 
-# -------------------------------
-# FIXED: correct merge
-# merge.zoo() requires unnamed args, so we rename after
-# -------------------------------
-price_data <- merge(
-  btc_data,
-  sp500_data,
-  vix_data,
-  nasdaq_data,
-  usd_data
-)
-
-# Set column names manually
+price_data <- merge(btc_data, sp500_data, vix_data, nasdaq_data, usd_data)
 colnames(price_data) <- c("Bitcoin", "SP500", "VIX", "NASDAQ", "USD")
 
-# Convert to tibble and clean
-price_data <- price_data |> 
-  fortify.zoo() |> 
-  as_tibble() |> 
-  drop_na()
+price_data <- price_data |>
+fortify.zoo() |>
+as_tibble() |>
+drop_na()
 
-# -------------------------------
-# FIXED: ensure Bitcoin is numeric
-# -------------------------------
 price_data$Bitcoin <- as.numeric(price_data$Bitcoin)
 
-# Compute Bitcoin log returns
 btc_ret <- diff(log(price_data$Bitcoin))
 btc_ret <- btc_ret[!is.na(btc_ret)]
 
-length(btc_ret)
+
+
 ```
-
-
 ```{r}
 #| warning: false
 #| message: false
 
-# Scale (standardization)
 btc_scaled <- scale(btc_ret)
-
-# Convert to numeric vector
 y <- as.numeric(btc_scaled)
 
-# Sequence parameters
-lookback <- 30     # 30-day window
-horizon  <- 1      # predict next day
+lookback <- 30
+horizon  <- 1  # (kept for clarity, not used directly here)
 
-# Function to create sequences
 make_sequences <- function(series, lookback) {
-  X <- list()
-  Y <- list()
-  for(i in seq(lookback, length(series)-1)) {
-    X[[length(X)+1]] <- series[(i-lookback+1):i]
-    Y[[length(Y)+1]] <- series[i+1]
-  }
-  X <- array(unlist(X), dim=c(length(X), lookback, 1))
-  Y <- array(unlist(Y), dim=c(length(Y), 1))
-  return(list(X=X, Y=Y))
+X <- list()
+Y <- list()
+for (i in seq(lookback, length(series) - 1)) {
+X[[length(X) + 1]] <- series[(i - lookback + 1):i]
+Y[[length(Y) + 1]] <- series[i + 1]
+}
+X <- array(unlist(X), dim = c(length(X), lookback, 1))
+Y <- array(unlist(Y), dim = c(length(Y), 1))
+
+storage.mode(X) <- "double"
+storage.mode(Y) <- "double"
+
+list(X = X, Y = Y)
 }
 
 seqs <- make_sequences(y, lookback)
 
-# Train/validation split (80/20)
 n <- dim(seqs$X)[1]
-train_idx <- floor(0.8*n)
+train_idx <- floor(0.8 * n)
 
-X_train <- seqs$X[1:train_idx,,]
+X_train <- seqs$X[1:train_idx, , , drop = FALSE]
 y_train <- seqs$Y[1:train_idx]
+X_val   <- seqs$X[(train_idx + 1):n, , , drop = FALSE]
+y_val   <- seqs$Y[(train_idx + 1):n]
 
-X_val <- seqs$X[(train_idx+1):n,,]
-y_val <- seqs$Y[(train_idx+1):n]
+# Convert R arrays → TensorFlow tensors (required for Keras 3.x)
+X_train_tf <- tf$convert_to_tensor(X_train, dtype = tf$float32)
+y_train_tf <- tf$convert_to_tensor(y_train, dtype = tf$float32)
+X_val_tf   <- tf$convert_to_tensor(X_val, dtype = tf$float32)
+y_val_tf   <- tf$convert_to_tensor(y_val, dtype = tf$float32)
+
+
 ```
 
+We use daily closing prices for Bitcoin, S&P 500, NASDAQ, VIX, and the USD Index obtained from FRED.  
+Deep learning models require a supervised structure, so we transform the raw price series into:
 
-```{r}
-#| warning: false
-#| message: false
+1. **Log Returns**  
+   \[
+   r_t = \log(P_t) - \log(P_{t-1})
+   \]
 
-es <- callback_early_stopping(
-  monitor="val_loss",
-  patience=5,
-  restore_best_weights=TRUE
-)
-```
+2. **Scaling**  
+   All return series are standardized with Z-score normalization.
+
+3. **Windowed Sequences (Lookback = 30)**  
+   - Inputs: previous 30 days  
+   - Output: next day return  
+   Produces tensors of shape:  
+   \[
+   (\text{samples}, 30, \text{features})
+   \]
+
+4. **Train/Validation Split (80/20)**  
+   First 80% used for training, last 20% for validation to evaluate out-of-sample performance.
+
+
 
 ### RNN Model
 
@@ -129,30 +151,388 @@ es <- callback_early_stopping(
 #| warning: false
 #| message: false
 
-rnn_model <- keras_model_sequential() |>
-  layer_simple_rnn(32, input_shape=c(lookback,1), return_sequences=FALSE) |>
-  layer_dropout(0.2) |>
-  layer_dense(1)
+# Simple RNN model using tf$keras
 
-rnn_model %>% compile(
-  optimizer="adam",
-  loss="mse",
-  metrics=list("mse")
+rnn_model <- keras$models$Sequential()
+rnn_model$add(keras$layers$Input(shape = as.integer(c(lookback, 1))))
+rnn_model$add(keras$layers$SimpleRNN(units = 32L))
+rnn_model$add(keras$layers$Dropout(rate = 0.2))
+rnn_model$add(keras$layers$Dense(units = 1L))
+
+rnn_model$compile(
+  optimizer = keras$optimizers$Adam(0.001),
+  loss = "mse",
+  metrics = list("mae")
 )
 
-history_rnn <- rnn_model %>% fit(
-  X_train, y_train,
-  validation_data=list(X_val, y_val),
-  epochs=30,
-  batch_size=32,
-  callbacks=list(es),
-  verbose=0
+history_rnn <- rnn_model$fit(
+  X_train_tf, y_train_tf,
+  epochs = 30L,
+  batch_size = 32L,
+  validation_data = list(X_val_tf, y_val_tf),
+  verbose = 0L
 )
 
-# Predictions + RMSE
-pred_rnn <- rnn_model %>% predict(X_val)
-rmse_rnn <- sqrt(mean((pred_rnn - y_val)^2))
-rmse_rnn
+pred_rnn <- rnn_model$predict(X_val_tf, verbose = 0L)
+rmse_rnn <- sqrt(mean((as.numeric(pred_rnn) - as.numeric(y_val))^2))
+cat("RNN RMSE:", round(rmse_rnn, 6), "\n")
+
+#| warning: false
+#| message: false
+
+rnn_loss <- data.frame(
+epoch    = 1:length(history_rnn$history$loss),
+loss     = history_rnn$history$loss,
+val_loss = history_rnn$history$val_loss
+)
+
+ggplot(rnn_loss, aes(epoch)) +
+geom_line(aes(y = loss, color = "Training Loss")) +
+geom_line(aes(y = val_loss, color = "Validation Loss")) +
+theme_minimal(base_size = 14) +
+labs(
+title = "Univariate RNN — Training vs Validation Loss",
+y = "Loss",
+color = "Legend"
+)
+
+
+
+```
+
+### GRU Model
+```{r}
+#| warning: false
+#| message: false
+
+gru_model <- keras$models$Sequential()
+gru_model$add(keras$layers$Input(shape = as.integer(c(lookback, 1))))
+gru_model$add(keras$layers$GRU(units = 32L))
+gru_model$add(keras$layers$Dropout(rate = 0.2))
+gru_model$add(keras$layers$Dense(units = 1L))
+
+gru_model$compile(
+  optimizer = keras$optimizers$Adam(0.001),
+  loss = "mse",
+  metrics = list("mae")
+)
+
+history_gru <- gru_model$fit(
+  X_train_tf, y_train_tf,
+  epochs = 30L,
+  batch_size = 32L,
+  validation_data = list(X_val_tf, y_val_tf),
+  verbose = 0L
+)
+
+pred_gru <- gru_model$predict(X_val_tf, verbose = 0L)
+rmse_gru <- sqrt(mean((as.numeric(pred_gru) - as.numeric(y_val))^2))
+cat("GRU RMSE:", round(rmse_gru, 6), "\n")
+
+gru_loss <- data.frame(
+epoch    = 1:length(history_gru$history$loss),
+loss     = history_gru$history$loss,
+val_loss = history_gru$history$val_loss
+)
+
+ggplot(gru_loss, aes(epoch)) +
+geom_line(aes(y = loss, color = "Training Loss")) +
+geom_line(aes(y = val_loss, color = "Validation Loss")) +
+theme_minimal(base_size = 14) +
+labs(
+title = "Univariate GRU — Training vs Validation Loss",
+y = "Loss",
+color = "Legend"
+)
+
+
+
+```
+
+### LSTM Model
+
+```{r}
+#| warning: false
+#| message: false
+lstm_model <- keras$models$Sequential()
+lstm_model$add(keras$layers$Input(shape = as.integer(c(lookback, 1))))
+lstm_model$add(keras$layers$LSTM(units = 32L))
+lstm_model$add(keras$layers$Dropout(rate = 0.2))
+lstm_model$add(keras$layers$Dense(units = 1L))
+
+lstm_model$compile(
+  optimizer = keras$optimizers$Adam(0.001),
+  loss = "mse",
+  metrics = list("mae")
+)
+
+history_lstm <- lstm_model$fit(
+  X_train_tf, y_train_tf,
+  epochs = 30L,
+  batch_size = 32L,
+  validation_data = list(X_val_tf, y_val_tf),
+  verbose = 0L
+)
+
+pred_lstm <- lstm_model$predict(X_val_tf, verbose = 0L)
+rmse_lstm <- sqrt(mean((as.numeric(pred_lstm) - as.numeric(y_val))^2))
+cat("LSTM RMSE:", round(rmse_lstm, 6), "\n")
+
+lstm_loss <- data.frame(
+epoch    = 1:length(history_lstm$history$loss),
+loss     = history_lstm$history$loss,
+val_loss = history_lstm$history$val_loss
+)
+
+ggplot(lstm_loss, aes(epoch)) +
+geom_line(aes(y = loss, color = "Training Loss")) +
+geom_line(aes(y = val_loss, color = "Validation Loss")) +
+theme_minimal(base_size = 14) +
+labs(
+title = "Univariate LSTM — Training vs Validation Loss",
+y = "Loss",
+color = "Legend"
+)
+
+
+```
+
+### Forecast Comparison Plot
+
+```{r}
+#| warning: false
+#| message: false
+
+library(ggplot2)
+
+val_dates <- tail(price_data$Index, length(y_val))
+
+plot_df <- tibble(
+Date   = val_dates,
+Actual = as.numeric(y_val),
+RNN    = as.numeric(pred_rnn),
+GRU    = as.numeric(pred_gru),
+LSTM   = as.numeric(pred_lstm)
+)
+
+ggplot(plot_df, aes(Date)) +
+geom_line(aes(y = Actual, color = "Actual"), linewidth = 0.8) +
+geom_line(aes(y = LSTM,   color = "LSTM"),   alpha = 0.8) +
+geom_line(aes(y = GRU,    color = "GRU"),    alpha = 0.6) +
+geom_line(aes(y = RNN,    color = "RNN"),    alpha = 0.4) +
+labs(
+title = "Bitcoin Returns: Actual vs Deep Learning Forecasts",
+y     = "Scaled Returns",
+color = "Series"
+) +
+theme_minimal()
+
+```
+
+### RMSE Summary Table
+
+```{r}
+#| warning: false
+#| message: false
+
+tibble(
+Model = c("RNN", "GRU", "LSTM"),
+RMSE  = c(rmse_rnn, rmse_gru, rmse_lstm)
+) |>
+arrange(RMSE) |>
+knitr::kable(digits = 6)
+
+```
+
+:::
+
+
+The univariate deep learning models produced meaningful differences in forecasting performance, especially when compared against the traditional ARIMA models from Homework 3. Across the three architectures, the LSTM achieved the lowest RMSE (0.719), followed closely by the GRU (0.721) and then the vanilla RNN (0.727). This performance hierarchy is consistent with the theoretical strengths of each model: LSTMs capture long-term dependencies through explicit memory gates, GRUs provide a lighter and faster alternative with similar expressiveness, and basic RNNs struggle with noisy and volatile series like Bitcoin returns.
+
+A clear pattern emerged when examining forecast behavior. While the actual BTC return series exhibits extreme spikes and large jumps, the deep learning models produce smoothed, mean-reverting forecasts. This reflects the effect of MSE loss, dropout regularization, and early stopping: the networks learn to avoid chasing high-variance noise and instead model the underlying conditional mean. This improves RMSE but limits the models’ ability to anticipate large shocks—an expected trade-off when forecasting highly volatile financial assets.
+
+Compared to ARIMA, the deep learning models demonstrated greater stability and better generalization on the validation set. ARIMA captured some short-term autocorrelation but could not adapt to nonlinear patterns or sudden regime shifts. Deep learning provided modest improvements in RMSE and produced cleaner forecasts, though these models remain limited in long-horizon accuracy. Overall, this comparison illustrates that deep learning can outperform classical models for noisy financial returns, but the choice of model depends on whether the goal is minimizing error, capturing shocks, or interpreting underlying structure.
+
+
+## Multivariate Deep Learning Models (BTC + SP500 + NASDAQ + VIX + USD)
+
+::: {.panel-tabset}
+
+### Data Preparation
+
+```{r}
+#| warning: false
+#| message: false
+
+# price_data already exists from earlier; it has:
+
+# columns: Index (date), Bitcoin, SP500, VIX, NASDAQ, USD
+
+# ---- Compute log returns for all series ----
+
+returns_multi <- price_data |>
+transmute(
+Date        = Index,
+Bitcoin_ret = c(NA, diff(log(Bitcoin))),
+SP500_ret   = c(NA, diff(log(SP500))),
+VIX_ret     = c(NA, diff(log(VIX))),
+NASDAQ_ret  = c(NA, diff(log(NASDAQ))),
+USD_ret     = c(NA, diff(log(USD)))
+) |>
+drop_na()
+
+# Put Bitcoin_ret first so it's the forecast target
+
+features_df <- returns_multi |>
+select(Date, Bitcoin_ret, SP500_ret, NASDAQ_ret, VIX_ret, USD_ret)
+
+# ---- Scale predictors (except Date) ----
+
+scaled_mat <- scale(as.matrix(features_df[, -1]))  # numeric matrix
+n_obs      <- nrow(scaled_mat)
+n_features <- ncol(scaled_mat)
+
+lookback_m <- 30L  # window length
+
+make_multi_sequences <- function(mat, lookback) {
+n <- nrow(mat)
+k <- ncol(mat)
+n_seq <- n - lookback
+X <- array(0, dim = c(n_seq, lookback, k))
+y <- numeric(n_seq)
+for (i in 1:n_seq) {
+X[i, , ] <- mat[i:(i + lookback - 1), ]
+y[i]     <- mat[i + lookback, 1]   # Bitcoin_ret is column 1
+}
+storage.mode(X) <- "double"
+storage.mode(y) <- "double"
+list(X = X, y = y)
+}
+
+seqs_m <- make_multi_sequences(scaled_mat, lookback_m)
+
+X_all <- seqs_m$X
+y_all <- seqs_m$y
+
+n_seq <- length(y_all)
+train_n <- floor(0.8 * n_seq)
+
+X_train_m <- X_all[1:train_n, , , drop = FALSE]
+y_train_m <- y_all[1:train_n]
+X_val_m   <- X_all[(train_n + 1):n_seq, , , drop = FALSE]
+y_val_m   <- y_all[(train_n + 1):n_seq]
+
+# convert to tensors
+
+X_train_m_tf <- tf$convert_to_tensor(X_train_m, dtype = tf$float32)
+y_train_m_tf <- tf$convert_to_tensor(matrix(y_train_m, ncol = 1L), dtype = tf$float32)
+X_val_m_tf   <- tf$convert_to_tensor(X_val_m,   dtype = tf$float32)
+y_val_m_tf   <- tf$convert_to_tensor(matrix(y_val_m, ncol = 1L),   dtype = tf$float32)
+
+# dates corresponding to targets (t+1)
+
+target_dates <- features_df$Date[(lookback_m + 1):nrow(features_df)]
+val_dates_m  <- target_dates[(train_n + 1):n_seq]
+
+
+
+```
+
+
+
+
+For the multivariate models, we use five daily financial series from FRED: **Bitcoin, S&P 500, NASDAQ, VIX, and the USD Index**. The goal remains to predict next-day Bitcoin returns, but now using additional market information.
+
+Our preprocessing steps are:
+
+1. **Log Returns**  
+   All price series are converted to log returns to stabilize variance and remove non-stationarity.
+
+2. **Scaling**  
+   We standardize all five return series using Z-score normalization so each feature is on the same scale.
+
+3. **Multivariate Windowing (Lookback = 30)**  
+   We create 30-day sliding windows containing all five features:  
+   \[
+   (\text{samples}, 30, 5)
+   \]  
+   Each window predicts the next-day Bitcoin return.
+
+4. **Train/Validation Split (80/20)**  
+   Data is split chronologically so the model is always tested on future observations.
+
+This preparation allows the RNN, GRU, and LSTM models to learn both temporal patterns and cross-market relationships.
+
+
+### RNN Model
+
+
+```{r}
+#| warning: false
+#| #| message: false
+
+# Early stopping callback (optional but nice)
+
+es_cb <- keras$callbacks$EarlyStopping(
+monitor = "val_loss",
+patience = 5L,
+restore_best_weights = TRUE
+)
+
+rnn_model_m <- keras$models$Sequential()
+rnn_model_m$add(
+keras$layers$Input(shape = as.integer(c(lookback_m, n_features)))
+)
+rnn_model_m$add(
+keras$layers$SimpleRNN(units = 32L)
+)
+rnn_model_m$add(
+keras$layers$Dropout(rate = 0.2)
+)
+rnn_model_m$add(
+keras$layers$Dense(units = 1L)
+)
+
+rnn_model_m$compile(
+optimizer = keras$optimizers$Adam(0.001),
+loss      = "mse"
+)
+
+hist_rnn_m <- rnn_model_m$fit(
+X_train_m_tf, y_train_m_tf,
+epochs          = 25L,
+batch_size      = 32L,
+validation_data = list(X_val_m_tf, y_val_m_tf),
+callbacks       = list(es_cb),
+verbose         = 0L
+)
+
+pred_rnn_m <- rnn_model_m$predict(X_val_m_tf, verbose = 0L)
+rmse_rnn_m <- sqrt(mean((as.numeric(pred_rnn_m) - as.numeric(y_val_m))^2))
+cat("Multivariate RNN RMSE:", round(rmse_rnn_m, 6), "\n")
+
+#| warning: false
+#| message: false
+
+rnn_loss_m <- data.frame(
+epoch    = 1:length(hist_rnn_m$history$loss),
+loss     = hist_rnn_m$history$loss,
+val_loss = hist_rnn_m$history$val_loss
+)
+
+ggplot(rnn_loss_m, aes(epoch)) +
+geom_line(aes(y = loss, color = "Training Loss")) +
+geom_line(aes(y = val_loss, color = "Validation Loss")) +
+theme_minimal(base_size = 14) +
+labs(
+title = "Multivariate RNN — Training vs Validation Loss",
+y = "Loss",
+color = "Legend"
+)
+
+
+
+
 ```
 
 ### GRU Model
@@ -161,95 +541,170 @@ rmse_rnn
 #| warning: false
 #| message: false
 
-gru_model <- keras_model_sequential() |>
-  layer_gru(32, input_shape=c(lookback,1), return_sequences=FALSE) |>
-  layer_dropout(0.2) |>
-  layer_dense(1)
-
-gru_model %>% compile(
-  optimizer="adam",
-  loss="mse",
-  metrics=list("mse")
+gru_model_m <- keras$models$Sequential()
+gru_model_m$add(
+keras$layers$Input(shape = as.integer(c(lookback_m, n_features)))
+)
+gru_model_m$add(
+keras$layers$GRU(units = 32L)
+)
+gru_model_m$add(
+keras$layers$Dropout(rate = 0.2)
+)
+gru_model_m$add(
+keras$layers$Dense(units = 1L)
 )
 
-history_gru <- gru_model %>% fit(
-  X_train, y_train,
-  validation_data=list(X_val, y_val),
-  epochs=30,
-  batch_size=32,
-  callbacks=list(es),
-  verbose=0
+gru_model_m$compile(
+optimizer = keras$optimizers$Adam(0.001),
+loss      = "mse"
 )
 
-pred_gru <- gru_model %>% predict(X_val)
-rmse_gru <- sqrt(mean((pred_gru - y_val)^2))
-rmse_gru
+hist_gru_m <- gru_model_m$fit(
+X_train_m_tf, y_train_m_tf,
+epochs          = 25L,
+batch_size      = 32L,
+validation_data = list(X_val_m_tf, y_val_m_tf),
+callbacks       = list(es_cb),
+verbose         = 0L
+)
+
+pred_gru_m <- gru_model_m$predict(X_val_m_tf, verbose = 0L)
+rmse_gru_m <- sqrt(mean((as.numeric(pred_gru_m) - as.numeric(y_val_m))^2))
+cat("Multivariate GRU RMSE:", round(rmse_gru_m, 6), "\n")
+
+gru_loss_m <- data.frame(
+epoch    = 1:length(hist_gru_m$history$loss),
+loss     = hist_gru_m$history$loss,
+val_loss = hist_gru_m$history$val_loss
+)
+
+ggplot(gru_loss_m, aes(epoch)) +
+geom_line(aes(y = loss, color = "Training Loss")) +
+geom_line(aes(y = val_loss, color = "Validation Loss")) +
+theme_minimal(base_size = 14) +
+labs(
+title = "Multivariate GRU — Training vs Validation Loss",
+y = "Loss",
+color = "Legend"
+)
+
+
+
 ```
-
-
 
 ### LSTM Model
-```{r}
-#| warning: false
-#| message: false
-
-lstm_model <- keras_model_sequential() |>
-  layer_lstm(32, input_shape=c(lookback,1), return_sequences=FALSE) |>
-  layer_dropout(0.2) |>
-  layer_dense(1)
-
-lstm_model %>% compile(
-  optimizer="adam",
-  loss="mse",
-  metrics=list("mse")
-)
-
-history_lstm <- lstm_model %>% fit(
-  X_train, y_train,
-  validation_data=list(X_val, y_val),
-  epochs=30,
-  batch_size=32,
-  callbacks=list(es),
-  verbose=0
-)
-
-pred_lstm <- lstm_model %>% predict(X_val)
-rmse_lstm <- sqrt(mean((pred_lstm - y_val)^2))
-rmse_lstm
-```
-
-
-### Forecast Comparison Plot
 
 ```{r}
 #| warning: false
 #| message: false
-library(ggplot2)
 
-val_dates <- tail(price_data$Date, length(y_val))
-
-plot_df <- tibble(
-  Date = val_dates,
-  Actual = as.numeric(y_val),
-  RNN = as.numeric(pred_rnn),
-  GRU = as.numeric(pred_gru),
-  LSTM = as.numeric(pred_lstm)
+lstm_model_m <- keras$models$Sequential()
+lstm_model_m$add(
+keras$layers$Input(shape = as.integer(c(lookback_m, n_features)))
+)
+lstm_model_m$add(
+keras$layers$LSTM(units = 32L)
+)
+lstm_model_m$add(
+keras$layers$Dropout(rate = 0.2)
+)
+lstm_model_m$add(
+keras$layers$Dense(units = 1L)
 )
 
-ggplot(plot_df, aes(Date)) +
-  geom_line(aes(y=Actual, color="Actual"), linewidth=0.8) +
-  geom_line(aes(y=LSTM, color="LSTM"), alpha=0.8) +
-  geom_line(aes(y=GRU, color="GRU"), alpha=0.6) +
-  geom_line(aes(y=RNN, color="RNN"), alpha=0.4) +
-  labs(title="Bitcoin Returns: Actual vs Deep Learning Forecasts",
-       y="Scaled Returns") +
-  theme_minimal()
+lstm_model_m$compile(
+optimizer = keras$optimizers$Adam(0.001),
+loss      = "mse"
+)
+
+hist_lstm_m <- lstm_model_m$fit(
+X_train_m_tf, y_train_m_tf,
+epochs          = 25L,
+batch_size      = 32L,
+validation_data = list(X_val_m_tf, y_val_m_tf),
+callbacks       = list(es_cb),
+verbose         = 0L
+)
+
+pred_lstm_m <- lstm_model_m$predict(X_val_m_tf, verbose = 0L)
+rmse_lstm_m <- sqrt(mean((as.numeric(pred_lstm_m) - as.numeric(y_val_m))^2))
+cat("Multivariate LSTM RMSE:", round(rmse_lstm_m, 6), "\n")
+
+lstm_loss_m <- data.frame(
+epoch    = 1:length(hist_lstm_m$history$loss),
+loss     = hist_lstm_m$history$loss,
+val_loss = hist_lstm_m$history$val_loss
+)
+
+ggplot(lstm_loss_m, aes(epoch)) +
+geom_line(aes(y = loss, color = "Training Loss")) +
+geom_line(aes(y = val_loss, color = "Validation Loss")) +
+theme_minimal(base_size = 14) +
+labs(
+title = "Multivariate LSTM — Training vs Validation Loss",
+y = "Loss",
+color = "Legend"
+)
+
+
 ```
 
+### RMSE Comparison Table
+
+```{r}
+#| warning: false
+#| message: false
+
+rmse_table_m <- tibble(
+Model = c("RNN (Multivariate)", "GRU (Multivariate)", "LSTM (Multivariate)"),
+RMSE  = c(rmse_rnn_m, rmse_gru_m, rmse_lstm_m)
+) |>
+arrange(RMSE)
+
+knitr::kable(rmse_table_m, digits = 6,
+caption = "Multivariate Deep Learning RMSE (Bitcoin target)")
 
 
-### RMSE Summary Table
+
+```
+
+### Forecast Plot
+
+```{r}
+#| warning: false
+#| message: false
+
+plot_df_m <- tibble(
+Date   = val_dates_m,
+Actual = as.numeric(y_val_m),
+RNN    = as.numeric(pred_rnn_m),
+GRU    = as.numeric(pred_gru_m),
+LSTM   = as.numeric(pred_lstm_m)
+)
+
+plot_long_m <- plot_df_m |>
+pivot_longer(cols = -Date, names_to = "Series", values_to = "Value")
+
+ggplot(plot_long_m, aes(Date, Value, color = Series)) +
+geom_line(alpha = 0.8) +
+theme_minimal(base_size = 13) +
+labs(
+title = "Bitcoin Returns – Multivariate Deep Learning Forecasts",
+y     = "Scaled Returns"
+)
 
 
-### Interpretation
+```
 
+:::
+
+The multivariate deep learning models provided several meaningful insights into how additional economic and financial variables influence the forecasting of Bitcoin returns. Compared to the univariate models, all three architectures—RNN, GRU, and LSTM—achieved modest improvements in RMSE once SP500, NASDAQ, VIX, and the USD Index were incorporated as inputs. This suggests that Bitcoin’s short-term return dynamics contain weak but non-zero relationships with broader macro-financial factors, even though the asset remains highly volatile and partially decoupled from traditional markets.
+
+Among the deep learning models, the GRU performed best (RMSE ≈ 0.714), followed closely by the LSTM (≈ 0.716). This mirrors the univariate results, reinforcing that gated recurrent architectures handle noisy, nonlinear return series more effectively than a basic RNN. GRUs remain computationally lighter while preserving the ability to capture temporal structure, which may explain their slight advantage. At the same time, the performance differences are small, indicating diminishing returns from additional complexity on this dataset.
+
+Training and validation curves show stable learning behavior across all models: validation loss remains below or close to training loss, suggesting good generalization rather than overfitting. The flatter slopes in the multivariate models indicate that adding external predictors helps regularize the model by smoothing out purely idiosyncratic Bitcoin noise. However, the models still predict a highly dampened version of reality—small oscillations around zero—because daily Bitcoin returns are dominated by unpredictable shocks. MSE loss naturally penalizes large deviations, incentivizing the network to learn the conditional mean rather than the extremes.
+
+Compared to traditional multivariate models such as VAR or SARIMAX, the deep learning models demonstrate better adaptability to nonlinear patterns and interactions among predictors. Classical models struggle to capture sudden regime shifts, volatility clustering, and nonlinear dependencies that GRU/LSTM networks can approximate more effectively.
+
+Overall, this comparison highlights that multivariate deep learning improves short-term forecasting accuracy, but only incrementally. While the performance gains are meaningful, they do not overcome the inherent unpredictability of crypto-assets. If the goal is operational forecasting—such as risk monitoring or short-term directional bias—GRU or LSTM models offer the best balance of performance and stability. However, their ability to forecast large spikes or crashes remains limited, emphasizing that model choice should depend on the practical decision context rather than RMSE alone.
