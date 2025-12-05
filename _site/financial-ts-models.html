@@ -318,7 +318,7 @@ window.Quarto = {
 <section id="sp-500" class="level2">
 <h2 class="anchored" data-anchor-id="sp-500">S&amp;P 500</h2>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">A. Plot data &amp; stationarity</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">B. ACF/PACF</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false">C. ARMA Mean Model Selection</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false">D. Mean Model Residuals &amp; ARCH Effects</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-5-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-5" role="tab" aria-controls="tabset-1-5" aria-selected="false">E. GARCH(p,q) Grid Search</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-6-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-6" role="tab" aria-controls="tabset-1-6" aria-selected="false">F. Final GARCH Diagnostics</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-7-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-7" role="tab" aria-controls="tabset-1-7" aria-selected="false">G. Model Equation (SPX)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-8-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-8" role="tab" aria-controls="tabset-1-8" aria-selected="false">Final ARMA(2,1)–GARCH(2,1) model</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">Stationarity &amp; Return Dynamics</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">ARMA Mean Model Selection</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false">Garch Model Selection</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false">Final Model &amp; Diagnostics</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div class="cell">
@@ -364,8 +364,6 @@ window.Quarto = {
 </div>
 </div>
 <p>The price series is clearly non-stationary (upward trend and large moves). The returns fluctuate around zero with roughly constant mean and pass the ADF test (small p-value), so S&amp;P 500 returns are stationary. The return plot shows volatility clustering, which motivates GARCH-type models.</p>
-</div>
-<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -391,7 +389,7 @@ window.Quarto = {
 </div>
 <p>The ACF decays quickly and stays near zero; PACF has small spikes in early lags. This pattern suggests that a low-order ARMA model (e.g., ARMA(1,0), ARMA(1,1), ARMA(2,1)) is reasonable for the mean.</p>
 </div>
-<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -464,8 +462,6 @@ Training set 0.0007188847</code></pre>
 </div>
 </div>
 <p>Here I try several candidate ARMA(p,q) models and compare AIC. The model with the lowest AIC (e.g., ARMA(2,1) in my run) is chosen as the mean model before adding GARCH.</p>
-</div>
-<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -557,7 +553,7 @@ Chi-squared = 440.15, df = 10, p-value &lt; 2.2e-16</code></pre>
 </div>
 <p>The residuals still show volatility clustering. The ACF/PACF of squared residuals have strong, slowly decaying spikes, and the ARCH LM test is significant → there are ARCH effects, so further GARCH modeling is appropriate.</p>
 </div>
-<div id="tabset-1-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-5-tab">
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -638,8 +634,6 @@ Chi-squared = 440.15, df = 10, p-value &lt; 2.2e-16</code></pre>
 </div>
 </div>
 <p>I compare several GARCH(p,q) candidates and use AIC to select the best ARMA+GARCH combination (e.g., ARMA(2,1)–GARCH(2,1)).</p>
-</div>
-<div id="tabset-1-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-6-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -734,7 +728,7 @@ X-squared = 9.6859, df = 20, p-value = 0.9735</code></pre>
 </div>
 <p>The standardized residuals look more stable. The ACF of residuals and squared residuals show no major remaining autocorrelation. Box–Ljung p-values are &gt; 0.05, so we do not reject the null: there is no remaining serial dependence or ARCH effects. This suggests the GARCH model captures the volatility dynamics well.</p>
 </div>
-<div id="tabset-1-7" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-7-tab">
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -866,11 +860,9 @@ Adjusted Pearson Goodness-of-Fit Test:
 4    50    112.99    5.772e-07
 
 
-Elapsed time : 0.2382278 </code></pre>
+Elapsed time : 0.2465689 </code></pre>
 </div>
 </div>
-</div>
-<div id="tabset-1-8" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-8-tab">
 <p>The model is for daily log-returns (r_t) with innovations (_t) and conditional variance (_t^2).</p>
 <p><strong>Mean equation</strong></p>
 <p><span class="math display">\[
@@ -896,7 +888,7 @@ r_t
 <section id="bitcoin" class="level2">
 <h2 class="anchored" data-anchor-id="bitcoin">Bitcoin</h2>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">A. Plot data &amp; stationarity</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">B. ACF/PACF</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">C. ARMA Mean Model Selection (BTC)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-4" role="tab" aria-controls="tabset-2-4" aria-selected="false">D. Mean Model Residuals &amp; ARCH Effects (BTC)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-5-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-5" role="tab" aria-controls="tabset-2-5" aria-selected="false">E. GARCH(p,q) Grid Search (BTC)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-6-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-6" role="tab" aria-controls="tabset-2-6" aria-selected="false">F. Final GARCH Diagnostics (BTC)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-7-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-7" role="tab" aria-controls="tabset-2-7" aria-selected="false">G. Model Equation (BTC)</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Stationarity &amp; Return Dynamics</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">ARMA Mean Model Selection</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">Garch Model Selection</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-4" role="tab" aria-controls="tabset-2-4" aria-selected="false">Final Model &amp; Diagnostics</a></li></ul>
 <div class="tab-content">
 <div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
 <div class="cell">
@@ -942,8 +934,6 @@ r_t
 </div>
 </div>
 <p>Bitcoin prices are highly volatile and clearly non-stationary in level. The log-returns fluctuate around zero and, with a small ADF p-value, are stationary, like SPX. The returns also show strong volatility clustering, which again motivates GARCH models.</p>
-</div>
-<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -969,7 +959,7 @@ r_t
 </div>
 <p>The ACF decays quickly and PACF has only a few small early spikes → a low-order ARMA model is again appropriate for the mean.</p>
 </div>
-<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1041,9 +1031,7 @@ Training set -2.65579e-06 0.04061955 0.02689016 99.09993 117.5073 0.6479278
 Training set 0.001267376</code></pre>
 </div>
 </div>
-<p>Same workflow as SPX: test several ARMA(p,q) candidates and select the lowest-AIC model for BTC returns.</p>
-</div>
-<div id="tabset-2-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-4-tab">
+<p>Test several ARMA(p,q) candidates and select the lowest-AIC model for BTC returns.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1132,7 +1120,7 @@ Chi-squared = 23.436, df = 10, p-value = 0.009245</code></pre>
 </div>
 <p>Just like SPX, BTC residuals exhibit ARCH effects: squared residuals show clear autocorrelation and the ARCH test is significant. So a GARCH(p,q) model is appropriate for Bitcoin returns as well.</p>
 </div>
-<div id="tabset-2-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-5-tab">
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1211,9 +1199,7 @@ Chi-squared = 23.436, df = 10, p-value = 0.009245</code></pre>
 <pre><code>Best BTC GARCH model: ARMA(1,0)-GARCH(2,1) </code></pre>
 </div>
 </div>
-<p>Again, I compare multiple BTC GARCH(p,q) candidates using AIC and select the best ARMA+GARCH combination.</p>
-</div>
-<div id="tabset-2-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-6-tab">
+<p>compare multiple BTC GARCH(p,q) candidates using AIC and select the best ARMA+GARCH combination.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1306,7 +1292,7 @@ X-squared = 13.375, df = 20, p-value = 0.8607</code></pre>
 </div>
 <p>For BTC as well, the standardized residuals after GARCH are much more stable, and Box–Ljung tests on both residuals and squared residuals should show no strong remaining dependence if the model fits well. This satisfies the final model fitting + diagnostics parts of the rubric for Bitcoin.</p>
 </div>
-<div id="tabset-2-7" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-7-tab">
+<div id="tabset-2-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-4-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1430,7 +1416,7 @@ Adjusted Pearson Goodness-of-Fit Test:
 4    50     274.2    4.559e-33
 
 
-Elapsed time : 0.103214 </code></pre>
+Elapsed time : 0.1021371 </code></pre>
 </div>
 </div>
 </div>

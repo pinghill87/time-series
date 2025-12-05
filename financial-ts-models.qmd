@@ -81,7 +81,7 @@ cat(sprintf("Length of BTC returns: %d observations\n", length(btc_ret)))
 
 ::: {.panel-tabset}
 
-### A. Plot data & stationarity
+### Stationarity & Return Dynamics  
 
 ```{r}
 
@@ -112,7 +112,6 @@ The returns fluctuate around zero with roughly constant mean and pass the ADF te
 The return plot shows volatility clustering, which motivates GARCH-type models.
 
 
-### B. ACF/PACF
 ```{r}
 
 #| warning: false
@@ -129,7 +128,7 @@ par(mfrow=c(1,1))
 The ACF decays quickly and stays near zero; PACF has small spikes in early lags.
 This pattern suggests that a low-order ARMA model (e.g., ARMA(1,0), ARMA(1,1), ARMA(2,1)) is reasonable for the mean.
 
-### C. ARMA Mean Model Selection
+### ARMA Mean Model Selection
 ```{r}
 
 #| warning: false
@@ -169,7 +168,6 @@ summary(best_mean_fit)
 Here I try several candidate ARMA(p,q) models and compare AIC.
 The model with the lowest AIC (e.g., ARMA(2,1) in my run) is chosen as the mean model before adding GARCH.
 
-### D. Mean Model Residuals & ARCH Effects
 ```{r}
 
 #| warning: false
@@ -225,7 +223,7 @@ par(mfrow=c(1,1))
 The residuals still show volatility clustering.
 The ACF/PACF of squared residuals have strong, slowly decaying spikes, and the ARCH LM test is significant → there are ARCH effects, so further GARCH modeling is appropriate.
 
-### E. GARCH(p,q) Grid Search
+### Garch Model Selection
 ```{r}
 
 #| warning: false
@@ -289,7 +287,6 @@ cat("Best GARCH model:", best_garch_name, "\n")
 
 I compare several GARCH(p,q) candidates and use AIC to select the best ARMA+GARCH combination (e.g., ARMA(2,1)–GARCH(2,1)).
 
-### F. Final GARCH Diagnostics
 ```{r}
 
 #| warning: false
@@ -341,7 +338,7 @@ The ACF of residuals and squared residuals show no major remaining autocorrelati
 Box–Ljung p-values are > 0.05, so we do not reject the null: there is no remaining serial dependence or ARCH effects.
 This suggests the GARCH model captures the volatility dynamics well.
 
-### G. Model Equation (SPX)
+### Final Model & Diagnostics
 
 ```{r}
 
@@ -356,11 +353,6 @@ print(best_params)
 show(best_garch_fit)  # shows mean & variance equations in rugarch format
 
 ```
-
-
-### Final ARMA(2,1)–GARCH(2,1) model
-
-
 
 
 The model is for daily log-returns \(r_t\) with innovations \(\varepsilon_t\) and conditional variance \(\sigma_t^2\).
@@ -395,7 +387,8 @@ $$
 
 ::: {.panel-tabset}
 
-### A. Plot data & stationarity
+### Stationarity & Return Dynamics  
+
 
 ```{r}
 
@@ -427,7 +420,6 @@ The log-returns fluctuate around zero and, with a small ADF p-value, are station
 The returns also show strong volatility clustering, which again motivates GARCH models.
 
 
-### B. ACF/PACF
 
 ```{r}
 
@@ -446,7 +438,7 @@ par(mfrow=c(1,1))
 
 The ACF decays quickly and PACF has only a few small early spikes → a low-order ARMA model is again appropriate for the mean.
 
-### C. ARMA Mean Model Selection (BTC)
+### ARMA Mean Model Selection
 ```{r}
 
 
@@ -483,10 +475,9 @@ cat("Selected BTC mean model:", best_name_btc, "\n")
 summary(best_mean_fit_btc)
 
 ```
-Same workflow as SPX: test several ARMA(p,q) candidates and select the lowest-AIC model for BTC returns.
+Test several ARMA(p,q) candidates and select the lowest-AIC model for BTC returns.
 
 
-### D. Mean Model Residuals & ARCH Effects (BTC)
 ```{r}
 
 
@@ -542,7 +533,7 @@ par(mfrow=c(1,1))
 Just like SPX, BTC residuals exhibit ARCH effects: squared residuals show clear autocorrelation and the ARCH test is significant.
 So a GARCH(p,q) model is appropriate for Bitcoin returns as well.
 
-### E. GARCH(p,q) Grid Search (BTC)
+### Garch Model Selection
 ```{r}
 
 #| warning: false
@@ -603,9 +594,9 @@ cat("Best BTC GARCH model:", best_garch_name_btc, "\n")
 
 ```
 
-Again, I compare multiple BTC GARCH(p,q) candidates using AIC and select the best ARMA+GARCH combination.
+ compare multiple BTC GARCH(p,q) candidates using AIC and select the best ARMA+GARCH combination.
 
-### F. Final GARCH Diagnostics (BTC)
+
 
 ```{r}
 
@@ -655,7 +646,7 @@ print(ljung_sqres_btc)
 
 For BTC as well, the standardized residuals after GARCH are much more stable, and Box–Ljung tests on both residuals and squared residuals should show no strong remaining dependence if the model fits well. This satisfies the final model fitting + diagnostics parts of the rubric for Bitcoin.
 
-### G. Model Equation (BTC)
+### Final Model & Diagnostics
 
 ```{r}
 
