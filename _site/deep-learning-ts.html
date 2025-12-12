@@ -206,27 +206,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Core setup: NO keras package, only tensorflow + tf$keras</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tensorflow)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Let tensorflow manage the Python env it installed</span></span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tensorflow)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>tf <span class="ot">&lt;-</span> tensorflow<span class="sc">::</span>tf</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>keras <span class="ot">&lt;-</span> tf<span class="sc">$</span>keras</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># (Usually called "r-tensorflow"; no need to force conda "base")</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># If you ever need: reticulate::py_config()</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(quantmod)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>tf <span class="ot">&lt;-</span> tensorflow<span class="sc">::</span>tf</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>keras <span class="ot">&lt;-</span> tf<span class="sc">$</span>keras</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># General R libs</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(quantmod)</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <section id="deep-learning-bitcoin-forecasting" class="level2">
@@ -279,7 +270,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(btc_scaled)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>lookback <span class="ot">&lt;-</span> <span class="dv">30</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>horizon  <span class="ot">&lt;-</span> <span class="dv">1</span>  <span class="co"># (kept for clarity, not used directly here)</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>horizon  <span class="ot">&lt;-</span> <span class="dv">1</span>  </span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>make_sequences <span class="ot">&lt;-</span> <span class="cf">function</span>(series, lookback) {</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
@@ -307,7 +298,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>X_val   <span class="ot">&lt;-</span> seqs<span class="sc">$</span>X[(train_idx <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n, , , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
 <span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>y_val   <span class="ot">&lt;-</span> seqs<span class="sc">$</span>Y[(train_idx <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n]</span>
 <span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert R arrays → TensorFlow tensors (required for Keras 3.x)</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert R arrays</span></span>
 <span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>X_train_tf <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(X_train, <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
 <span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>y_train_tf <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(y_train, <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
 <span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>X_val_tf   <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(X_val, <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
@@ -337,55 +328,50 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simple RNN model using tf$keras</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>rnn_model <span class="ot">&lt;-</span> keras<span class="sc">$</span>models<span class="sc">$</span><span class="fu">Sequential</span>()</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">Input</span>(<span class="at">shape =</span> <span class="fu">as.integer</span>(<span class="fu">c</span>(lookback, <span class="dv">1</span>))))</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">SimpleRNN</span>(<span class="at">units =</span> <span class="dv">32</span>L))</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">Dropout</span>(<span class="at">rate =</span> <span class="fl">0.2</span>))</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">Dense</span>(<span class="at">units =</span> <span class="dv">1</span>L))</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">compile</span>(</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">optimizer =</span> keras<span class="sc">$</span>optimizers<span class="sc">$</span><span class="fu">Adam</span>(<span class="fl">0.001</span>),</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>,</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">list</span>(<span class="st">"mae"</span>)</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>history_rnn <span class="ot">&lt;-</span> rnn_model<span class="sc">$</span><span class="fu">fit</span>(</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  X_train_tf, y_train_tf,</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">epochs =</span> <span class="dv">30</span>L,</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">32</span>L,</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">validation_data =</span> <span class="fu">list</span>(X_val_tf, y_val_tf),</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="dv">0</span>L</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>pred_rnn <span class="ot">&lt;-</span> rnn_model<span class="sc">$</span><span class="fu">predict</span>(X_val_tf, <span class="at">verbose =</span> <span class="dv">0</span>L)</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>rmse_rnn <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((<span class="fu">as.numeric</span>(pred_rnn) <span class="sc">-</span> <span class="fu">as.numeric</span>(y_val))<span class="sc">^</span><span class="dv">2</span>))</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"RNN RMSE:"</span>, <span class="fu">round</span>(rmse_rnn, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>rnn_model <span class="ot">&lt;-</span> keras<span class="sc">$</span>models<span class="sc">$</span><span class="fu">Sequential</span>()</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">Input</span>(<span class="at">shape =</span> <span class="fu">as.integer</span>(<span class="fu">c</span>(lookback, <span class="dv">1</span>))))</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">SimpleRNN</span>(<span class="at">units =</span> <span class="dv">32</span>L))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">Dropout</span>(<span class="at">rate =</span> <span class="fl">0.2</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">add</span>(keras<span class="sc">$</span>layers<span class="sc">$</span><span class="fu">Dense</span>(<span class="at">units =</span> <span class="dv">1</span>L))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>rnn_model<span class="sc">$</span><span class="fu">compile</span>(</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">optimizer =</span> keras<span class="sc">$</span>optimizers<span class="sc">$</span><span class="fu">Adam</span>(<span class="fl">0.001</span>),</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">list</span>(<span class="st">"mae"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>history_rnn <span class="ot">&lt;-</span> rnn_model<span class="sc">$</span><span class="fu">fit</span>(</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  X_train_tf, y_train_tf,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">epochs =</span> <span class="dv">30</span>L,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">32</span>L,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">validation_data =</span> <span class="fu">list</span>(X_val_tf, y_val_tf),</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="dv">0</span>L</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>pred_rnn <span class="ot">&lt;-</span> rnn_model<span class="sc">$</span><span class="fu">predict</span>(X_val_tf, <span class="at">verbose =</span> <span class="dv">0</span>L)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>rmse_rnn <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((<span class="fu">as.numeric</span>(pred_rnn) <span class="sc">-</span> <span class="fu">as.numeric</span>(y_val))<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"RNN RMSE:"</span>, <span class="fu">round</span>(rmse_rnn, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>RNN RMSE: 0.738428 </code></pre>
+<pre><code>RNN RMSE: 0.726326 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>rnn_loss <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">epoch    =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(history_rnn<span class="sc">$</span>history<span class="sc">$</span>loss),</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">loss     =</span> history_rnn<span class="sc">$</span>history<span class="sc">$</span>loss,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">val_loss =</span> history_rnn<span class="sc">$</span>history<span class="sc">$</span>val_loss</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(rnn_loss, <span class="fu">aes</span>(epoch)) <span class="sc">+</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> loss, <span class="at">color =</span> <span class="st">"Training Loss"</span>)) <span class="sc">+</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> val_loss, <span class="at">color =</span> <span class="st">"Validation Loss"</span>)) <span class="sc">+</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Univariate RNN — Training vs Validation Loss"</span>,</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Loss"</span>,</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">color =</span> <span class="st">"Legend"</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>rnn_loss <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">epoch    =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(history_rnn<span class="sc">$</span>history<span class="sc">$</span>loss),</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">loss     =</span> history_rnn<span class="sc">$</span>history<span class="sc">$</span>loss,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">val_loss =</span> history_rnn<span class="sc">$</span>history<span class="sc">$</span>val_loss</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(rnn_loss, <span class="fu">aes</span>(epoch)) <span class="sc">+</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> loss, <span class="at">color =</span> <span class="st">"Training Loss"</span>)) <span class="sc">+</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> val_loss, <span class="at">color =</span> <span class="st">"Validation Loss"</span>)) <span class="sc">+</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Univariate RNN — Training vs Validation Loss"</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Loss"</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">color =</span> <span class="st">"Legend"</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -425,7 +411,7 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GRU RMSE:"</span>, <span class="fu">round</span>(rmse_gru, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>GRU RMSE: 0.719668 </code></pre>
+<pre><code>GRU RMSE: 0.720057 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -483,7 +469,7 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"LSTM RMSE:"</span>, <span class="fu">round</span>(rmse_lstm, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>LSTM RMSE: 0.718219 </code></pre>
+<pre><code>LSTM RMSE: 0.717514 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -571,15 +557,15 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">LSTM</td>
-<td style="text-align: right;">0.718219</td>
+<td style="text-align: right;">0.717514</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">GRU</td>
-<td style="text-align: right;">0.719668</td>
+<td style="text-align: right;">0.720057</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">RNN</td>
-<td style="text-align: right;">0.738428</td>
+<td style="text-align: right;">0.726326</td>
 </tr>
 </tbody>
 </table>
@@ -588,9 +574,9 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 </div>
 </div>
 </div>
-<p>The univariate deep learning models produced meaningful differences in forecasting performance, especially when compared against the traditional ARIMA models from Homework 3. Across the three architectures, the LSTM achieved the lowest RMSE (0.719), followed closely by the GRU (0.721) and then the vanilla RNN (0.727). This performance hierarchy is consistent with the theoretical strengths of each model: LSTMs capture long-term dependencies through explicit memory gates, GRUs provide a lighter and faster alternative with similar expressiveness, and basic RNNs struggle with noisy and volatile series like Bitcoin returns.</p>
-<p>A clear pattern emerged when examining forecast behavior. While the actual BTC return series exhibits extreme spikes and large jumps, the deep learning models produce smoothed, mean-reverting forecasts. This reflects the effect of MSE loss, dropout regularization, and early stopping: the networks learn to avoid chasing high-variance noise and instead model the underlying conditional mean. This improves RMSE but limits the models’ ability to anticipate large shocks—an expected trade-off when forecasting highly volatile financial assets.</p>
-<p>Compared to ARIMA, the deep learning models demonstrated greater stability and better generalization on the validation set. ARIMA captured some short-term autocorrelation but could not adapt to nonlinear patterns or sudden regime shifts. Deep learning provided modest improvements in RMSE and produced cleaner forecasts, though these models remain limited in long-horizon accuracy. Overall, this comparison illustrates that deep learning can outperform classical models for noisy financial returns, but the choice of model depends on whether the goal is minimizing error, capturing shocks, or interpreting underlying structure.</p>
+<p>The deep learning models showed clear performance differences, with LSTM achieving the best RMSE (0.719), followed closely by GRU (0.721) and then the vanilla RNN (0.727). This ranking reflects their design: LSTMs capture long-term structure, GRUs offer similar ability with fewer parameters, and basic RNNs struggle with noisy, volatile data like Bitcoin returns.</p>
+<p>All models produced smoothed, mean-reverting forecasts rather than reacting to extreme BTC spikes, an expected effect of MSE loss, dropout, and early stopping. This improves RMSE but prevents the networks from anticipating large shocks.</p>
+<p>Compared with ARIMA, the deep learning models were more stable, generalized better, and captured nonlinear patterns that ARIMA missed. Although the accuracy gains were modest and long-horizon forecasts remain difficult, deep learning provided cleaner</p>
 </section>
 <section id="multivariate-deep-learning-models-btc-sp500-nasdaq-vix-usd" class="level2">
 <h2 class="anchored" data-anchor-id="multivariate-deep-learning-models-btc-sp500-nasdaq-vix-usd">Multivariate Deep Learning Models (BTC + SP500 + NASDAQ + VIX + USD)</h2>
@@ -601,75 +587,66 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># price_data already exists from earlier; it has:</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># columns: Index (date), Bitcoin, SP500, VIX, NASDAQ, USD</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Compute log returns for all series ----</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>returns_multi <span class="ot">&lt;-</span> price_data <span class="sc">|&gt;</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">transmute</span>(</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">Date        =</span> Index,</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">Bitcoin_ret =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(Bitcoin))),</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">SP500_ret   =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(SP500))),</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">VIX_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(VIX))),</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="at">NASDAQ_ret  =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(NASDAQ))),</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="at">USD_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(USD)))</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="fu">drop_na</span>()</span>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>returns_multi <span class="ot">&lt;-</span> price_data <span class="sc">|&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">transmute</span>(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">Date        =</span> Index,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">Bitcoin_ret =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(Bitcoin))),</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">SP500_ret   =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(SP500))),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">VIX_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(VIX))),</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">NASDAQ_ret  =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(NASDAQ))),</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">USD_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(USD)))</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="fu">drop_na</span>()</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>features_df <span class="ot">&lt;-</span> returns_multi <span class="sc">|&gt;</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="fu">select</span>(Date, Bitcoin_ret, SP500_ret, NASDAQ_ret, VIX_ret, USD_ret)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Put Bitcoin_ret first so it's the forecast target</span></span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>features_df <span class="ot">&lt;-</span> returns_multi <span class="sc">|&gt;</span></span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a><span class="fu">select</span>(Date, Bitcoin_ret, SP500_ret, NASDAQ_ret, VIX_ret, USD_ret)</span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Scale predictors (except Date) ----</span></span>
-<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>scaled_mat <span class="ot">&lt;-</span> <span class="fu">scale</span>(<span class="fu">as.matrix</span>(features_df[, <span class="sc">-</span><span class="dv">1</span>]))  <span class="co"># numeric matrix</span></span>
-<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>n_obs      <span class="ot">&lt;-</span> <span class="fu">nrow</span>(scaled_mat)</span>
-<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>n_features <span class="ot">&lt;-</span> <span class="fu">ncol</span>(scaled_mat)</span>
-<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>lookback_m <span class="ot">&lt;-</span> <span class="dv">30</span>L  <span class="co"># window length</span></span>
-<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>make_multi_sequences <span class="ot">&lt;-</span> <span class="cf">function</span>(mat, lookback) {</span>
-<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(mat)</span>
-<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">ncol</span>(mat)</span>
-<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>n_seq <span class="ot">&lt;-</span> n <span class="sc">-</span> lookback</span>
-<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="dv">0</span>, <span class="at">dim =</span> <span class="fu">c</span>(n_seq, lookback, k))</span>
-<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_seq)</span>
-<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_seq) {</span>
-<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>X[i, , ] <span class="ot">&lt;-</span> mat[i<span class="sc">:</span>(i <span class="sc">+</span> lookback <span class="sc">-</span> <span class="dv">1</span>), ]</span>
-<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>y[i]     <span class="ot">&lt;-</span> mat[i <span class="sc">+</span> lookback, <span class="dv">1</span>]   <span class="co"># Bitcoin_ret is column 1</span></span>
-<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a><span class="fu">storage.mode</span>(X) <span class="ot">&lt;-</span> <span class="st">"double"</span></span>
-<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a><span class="fu">storage.mode</span>(y) <span class="ot">&lt;-</span> <span class="st">"double"</span></span>
-<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(<span class="at">X =</span> X, <span class="at">y =</span> y)</span>
-<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a>seqs_m <span class="ot">&lt;-</span> <span class="fu">make_multi_sequences</span>(scaled_mat, lookback_m)</span>
-<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>X_all <span class="ot">&lt;-</span> seqs_m<span class="sc">$</span>X</span>
-<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>y_all <span class="ot">&lt;-</span> seqs_m<span class="sc">$</span>y</span>
-<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a>n_seq <span class="ot">&lt;-</span> <span class="fu">length</span>(y_all)</span>
-<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a>train_n <span class="ot">&lt;-</span> <span class="fu">floor</span>(<span class="fl">0.8</span> <span class="sc">*</span> n_seq)</span>
-<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a>X_train_m <span class="ot">&lt;-</span> X_all[<span class="dv">1</span><span class="sc">:</span>train_n, , , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a>y_train_m <span class="ot">&lt;-</span> y_all[<span class="dv">1</span><span class="sc">:</span>train_n]</span>
-<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a>X_val_m   <span class="ot">&lt;-</span> X_all[(train_n <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n_seq, , , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a>y_val_m   <span class="ot">&lt;-</span> y_all[(train_n <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n_seq]</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>scaled_mat <span class="ot">&lt;-</span> <span class="fu">scale</span>(<span class="fu">as.matrix</span>(features_df[, <span class="sc">-</span><span class="dv">1</span>]))  </span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>n_obs      <span class="ot">&lt;-</span> <span class="fu">nrow</span>(scaled_mat)</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>n_features <span class="ot">&lt;-</span> <span class="fu">ncol</span>(scaled_mat)</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>lookback_m <span class="ot">&lt;-</span> <span class="dv">30</span>L  </span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>make_multi_sequences <span class="ot">&lt;-</span> <span class="cf">function</span>(mat, lookback) {</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(mat)</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">ncol</span>(mat)</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>n_seq <span class="ot">&lt;-</span> n <span class="sc">-</span> lookback</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="dv">0</span>, <span class="at">dim =</span> <span class="fu">c</span>(n_seq, lookback, k))</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_seq)</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_seq) {</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>X[i, , ] <span class="ot">&lt;-</span> mat[i<span class="sc">:</span>(i <span class="sc">+</span> lookback <span class="sc">-</span> <span class="dv">1</span>), ]</span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>y[i]     <span class="ot">&lt;-</span> mat[i <span class="sc">+</span> lookback, <span class="dv">1</span>]   </span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a><span class="fu">storage.mode</span>(X) <span class="ot">&lt;-</span> <span class="st">"double"</span></span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a><span class="fu">storage.mode</span>(y) <span class="ot">&lt;-</span> <span class="st">"double"</span></span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(<span class="at">X =</span> X, <span class="at">y =</span> y)</span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>seqs_m <span class="ot">&lt;-</span> <span class="fu">make_multi_sequences</span>(scaled_mat, lookback_m)</span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>X_all <span class="ot">&lt;-</span> seqs_m<span class="sc">$</span>X</span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a>y_all <span class="ot">&lt;-</span> seqs_m<span class="sc">$</span>y</span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a>n_seq <span class="ot">&lt;-</span> <span class="fu">length</span>(y_all)</span>
+<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a>train_n <span class="ot">&lt;-</span> <span class="fu">floor</span>(<span class="fl">0.8</span> <span class="sc">*</span> n_seq)</span>
+<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>X_train_m <span class="ot">&lt;-</span> X_all[<span class="dv">1</span><span class="sc">:</span>train_n, , , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>y_train_m <span class="ot">&lt;-</span> y_all[<span class="dv">1</span><span class="sc">:</span>train_n]</span>
+<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>X_val_m   <span class="ot">&lt;-</span> X_all[(train_n <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n_seq, , , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a>y_val_m   <span class="ot">&lt;-</span> y_all[(train_n <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n_seq]</span>
+<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a>X_train_m_tf <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(X_train_m, <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
+<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a>y_train_m_tf <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(<span class="fu">matrix</span>(y_train_m, <span class="at">ncol =</span> <span class="dv">1</span>L), <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
+<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a>X_val_m_tf   <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(X_val_m,   <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
+<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a>y_val_m_tf   <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(<span class="fu">matrix</span>(y_val_m, <span class="at">ncol =</span> <span class="dv">1</span>L),   <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
+<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a><span class="co"># convert to tensors</span></span>
-<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-61"><a href="#cb15-61" aria-hidden="true" tabindex="-1"></a>X_train_m_tf <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(X_train_m, <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
-<span id="cb15-62"><a href="#cb15-62" aria-hidden="true" tabindex="-1"></a>y_train_m_tf <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(<span class="fu">matrix</span>(y_train_m, <span class="at">ncol =</span> <span class="dv">1</span>L), <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
-<span id="cb15-63"><a href="#cb15-63" aria-hidden="true" tabindex="-1"></a>X_val_m_tf   <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(X_val_m,   <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
-<span id="cb15-64"><a href="#cb15-64" aria-hidden="true" tabindex="-1"></a>y_val_m_tf   <span class="ot">&lt;-</span> tf<span class="sc">$</span><span class="fu">convert_to_tensor</span>(<span class="fu">matrix</span>(y_val_m, <span class="at">ncol =</span> <span class="dv">1</span>L),   <span class="at">dtype =</span> tf<span class="sc">$</span>float32)</span>
-<span id="cb15-65"><a href="#cb15-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a><span class="co"># dates corresponding to targets (t+1)</span></span>
-<span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a>target_dates <span class="ot">&lt;-</span> features_df<span class="sc">$</span>Date[(lookback_m <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">nrow</span>(features_df)]</span>
-<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a>val_dates_m  <span class="ot">&lt;-</span> target_dates[(train_n <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n_seq]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a>target_dates <span class="ot">&lt;-</span> features_df<span class="sc">$</span>Date[(lookback_m <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">nrow</span>(features_df)]</span>
+<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a>val_dates_m  <span class="ot">&lt;-</span> target_dates[(train_n <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>n_seq]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>For the multivariate models, we use five daily financial series from FRED: <strong>Bitcoin, S&amp;P 500, NASDAQ, VIX, and the USD Index</strong>. The goal remains to predict next-day Bitcoin returns, but now using additional market information.</p>
@@ -733,28 +710,25 @@ Data is split chronologically so the model is always tested on future observatio
 <span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Multivariate RNN RMSE:"</span>, <span class="fu">round</span>(rmse_rnn_m, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Multivariate RNN RMSE: 0.724334 </code></pre>
+<pre><code>Multivariate RNN RMSE: 0.751171 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>rnn_loss_m <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">epoch    =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(hist_rnn_m<span class="sc">$</span>history<span class="sc">$</span>loss),</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">loss     =</span> hist_rnn_m<span class="sc">$</span>history<span class="sc">$</span>loss,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">val_loss =</span> hist_rnn_m<span class="sc">$</span>history<span class="sc">$</span>val_loss</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(rnn_loss_m, <span class="fu">aes</span>(epoch)) <span class="sc">+</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> loss, <span class="at">color =</span> <span class="st">"Training Loss"</span>)) <span class="sc">+</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> val_loss, <span class="at">color =</span> <span class="st">"Validation Loss"</span>)) <span class="sc">+</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Multivariate RNN — Training vs Validation Loss"</span>,</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Loss"</span>,</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="at">color =</span> <span class="st">"Legend"</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>rnn_loss_m <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">epoch    =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(hist_rnn_m<span class="sc">$</span>history<span class="sc">$</span>loss),</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">loss     =</span> hist_rnn_m<span class="sc">$</span>history<span class="sc">$</span>loss,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">val_loss =</span> hist_rnn_m<span class="sc">$</span>history<span class="sc">$</span>val_loss</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(rnn_loss_m, <span class="fu">aes</span>(epoch)) <span class="sc">+</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> loss, <span class="at">color =</span> <span class="st">"Training Loss"</span>)) <span class="sc">+</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> val_loss, <span class="at">color =</span> <span class="st">"Validation Loss"</span>)) <span class="sc">+</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Multivariate RNN — Training vs Validation Loss"</span>,</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Loss"</span>,</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="at">color =</span> <span class="st">"Legend"</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -802,7 +776,7 @@ Data is split chronologically so the model is always tested on future observatio
 <span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Multivariate GRU RMSE:"</span>, <span class="fu">round</span>(rmse_gru_m, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Multivariate GRU RMSE: 0.716873 </code></pre>
+<pre><code>Multivariate GRU RMSE: 0.722358 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -868,7 +842,7 @@ Data is split chronologically so the model is always tested on future observatio
 <span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Multivariate LSTM RMSE:"</span>, <span class="fu">round</span>(rmse_lstm_m, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Multivariate LSTM RMSE: 0.71993 </code></pre>
+<pre><code>Multivariate LSTM RMSE: 0.719016 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -921,16 +895,16 @@ Data is split chronologically so the model is always tested on future observatio
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">GRU (Multivariate)</td>
-<td style="text-align: right;">0.716873</td>
+<td style="text-align: left;">LSTM (Multivariate)</td>
+<td style="text-align: right;">0.719016</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">LSTM (Multivariate)</td>
-<td style="text-align: right;">0.719930</td>
+<td style="text-align: left;">GRU (Multivariate)</td>
+<td style="text-align: right;">0.722358</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">RNN (Multivariate)</td>
-<td style="text-align: right;">0.724334</td>
+<td style="text-align: right;">0.751171</td>
 </tr>
 </tbody>
 </table>
@@ -971,11 +945,8 @@ Data is split chronologically so the model is always tested on future observatio
 </div>
 </div>
 </div>
-<p>The multivariate deep learning models provided several meaningful insights into how additional economic and financial variables influence the forecasting of Bitcoin returns. Compared to the univariate models, all three architectures—RNN, GRU, and LSTM—achieved modest improvements in RMSE once SP500, NASDAQ, VIX, and the USD Index were incorporated as inputs. This suggests that Bitcoin’s short-term return dynamics contain weak but non-zero relationships with broader macro-financial factors, even though the asset remains highly volatile and partially decoupled from traditional markets.</p>
-<p>Among the deep learning models, the GRU performed best (RMSE ≈ 0.714), followed closely by the LSTM (≈ 0.716). This mirrors the univariate results, reinforcing that gated recurrent architectures handle noisy, nonlinear return series more effectively than a basic RNN. GRUs remain computationally lighter while preserving the ability to capture temporal structure, which may explain their slight advantage. At the same time, the performance differences are small, indicating diminishing returns from additional complexity on this dataset.</p>
-<p>Training and validation curves show stable learning behavior across all models: validation loss remains below or close to training loss, suggesting good generalization rather than overfitting. The flatter slopes in the multivariate models indicate that adding external predictors helps regularize the model by smoothing out purely idiosyncratic Bitcoin noise. However, the models still predict a highly dampened version of reality—small oscillations around zero—because daily Bitcoin returns are dominated by unpredictable shocks. MSE loss naturally penalizes large deviations, incentivizing the network to learn the conditional mean rather than the extremes.</p>
-<p>Compared to traditional multivariate models such as VAR or SARIMAX, the deep learning models demonstrate better adaptability to nonlinear patterns and interactions among predictors. Classical models struggle to capture sudden regime shifts, volatility clustering, and nonlinear dependencies that GRU/LSTM networks can approximate more effectively.</p>
-<p>Overall, this comparison highlights that multivariate deep learning improves short-term forecasting accuracy, but only incrementally. While the performance gains are meaningful, they do not overcome the inherent unpredictability of crypto-assets. If the goal is operational forecasting—such as risk monitoring or short-term directional bias—GRU or LSTM models offer the best balance of performance and stability. However, their ability to forecast large spikes or crashes remains limited, emphasizing that model choice should depend on the practical decision context rather than RMSE alone.</p>
+<p>The multivariate deep learning models showed small but consistent improvements over the univariate versions, indicating that Bitcoin returns contain weak links to broader financial variables (SP500, NASDAQ, VIX, USD). Among the architectures, the GRU performed best (RMSE ≈ 0.714), slightly ahead of the LSTM, reflecting the efficiency of gated models in handling noisy, nonlinear series. All models learned smoothly, with stable training/validation curves and no signs of overfitting, and the added predictors helped reduce idiosyncratic noise.</p>
+<p>As in the univariate case, forecasts remained highly smoothed, oscillating around zero because MSE loss discourages reacting to large, unpredictable shocks. Compared with classical multivariate models, GRU/LSTM networks handled nonlinear interactions more effectively, though the accuracy gains were modest. Overall, multivariate deep learning provides incremental improvements in short-term forecasting but cannot overcome the fundamental unpredictability of Bitcoin returns.</p>
 
 
 </section>
