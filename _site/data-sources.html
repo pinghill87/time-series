@@ -20,40 +20,6 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
@@ -101,35 +67,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
 
 </head>
 
@@ -232,77 +169,8 @@ window.Quarto = {
 </header>
 
 
-<p>This project uses daily macro-financial data obtained directly from the Federal Reserve Economic Data (FRED) API through the R package <code>quantmod</code>. All datasets were downloaded programmatically to ensure reproducibility and consistent formatting.</p>
-<section id="federal-reserve-economic-data-fred" class="level2">
-<h2 class="anchored" data-anchor-id="federal-reserve-economic-data-fred">1. Federal Reserve Economic Data (FRED)</h2>
-<p>All price and index series used in the analysis come from FRED, including:</p>
-<section id="asset-variable" class="level3">
-<h3 class="anchored" data-anchor-id="asset-variable">Asset / Variable</h3>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 41%">
-<col style="width: 26%">
-<col style="width: 31%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Asset / Variable</th>
-<th>FRED Code</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>S&amp;P 500 Index</td>
-<td>^GSPC</td>
-<td>Daily closing levels of the S&amp;P 500, representing broad U.S. equity market performance.</td>
-</tr>
-<tr class="even">
-<td>NASDAQ Composite Index</td>
-<td>NASDAQCOM</td>
-<td>Tech-heavy U.S. equity index capturing large-cap and growth-oriented stocks.</td>
-</tr>
-<tr class="odd">
-<td>VIX (CBOE Volatility Index)</td>
-<td>VIXCLS</td>
-<td>Daily closing value of implied volatility (“fear gauge”).</td>
-</tr>
-<tr class="even">
-<td>Bitcoin Price (USD)</td>
-<td>CBBTCUSD</td>
-<td>Daily Bitcoin–USD price from FRED’s digital asset database.</td>
-</tr>
-<tr class="odd">
-<td>U.S. Dollar Index</td>
-<td>DTWEXBGS</td>
-<td>Nominal broad trade-weighted U.S. Dollar index.</td>
-</tr>
-</tbody>
-</table>
-<p>These were loaded using:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">getSymbols</span>(symbols, <span class="at">src =</span> <span class="st">"FRED"</span>, <span class="at">from =</span> start_date, <span class="at">to =</span> end_date)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>This ensures: - consistent date ranges - synchronized timestamps across all assets - automatic missing-value handling - direct reproducibility through code</p>
-</section>
-</section>
-<section id="preprocessing-derived-variables" class="level2">
-<h2 class="anchored" data-anchor-id="preprocessing-derived-variables">2. Preprocessing &amp; Derived Variables</h2>
-<p>From the raw FRED price levels, the following were constructed:</p>
-<section id="daily-log-returns" class="level3">
-<h3 class="anchored" data-anchor-id="daily-log-returns">Daily log returns:</h3>
-<p><span class="math display">\[r_t = \log(P_t) - \log(P_{t-1})\]</span></p>
-<p>Used for ARIMA, SARIMA, GARCH, VAR/ARIMAX, and all deep learning models.</p>
-</section>
-<section id="merged-time-aligned-dataset" class="level3">
-<h3 class="anchored" data-anchor-id="merged-time-aligned-dataset">Merged time-aligned dataset</h3>
-<p>All series were merged by date and <code>na.omit()</code> was applied to ensure clean modeling.</p>
-</section>
-<section id="feature-matrices" class="level3">
-<h3 class="anchored" data-anchor-id="feature-matrices">Feature matrices</h3>
-<p>Used in multivariate ARIMAX and deep learning models (SP500, NASDAQ, VIX, USD as predictors).</p>
 
 
-</section>
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

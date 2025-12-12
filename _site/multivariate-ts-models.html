@@ -205,7 +205,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
-<p>In this analysis, we investigate the relationships between cryptocurrency markets (Bitcoin), traditional equity markets (S&amp;P 500), market volatility (VIX), and macroeconomic indicators (CPI). Understanding these relationships is crucial for portfolio diversification, risk management, and forecasting in modern financial markets. In addition, the NASDAQ Composite Index is included as a technology-heavy benchmark that captures broader equity-market dynamics beyond the S&amp;P 500, especially sectors that tend to move more closely with cryptocurrency markets.</p>
+<p>In this analysis, we investigate the relationships between cryptocurrency markets (Bitcoin), traditional equity markets (S&amp;P 500), market volatility (VIX), and macroeconomic indicators (CPI). Understanding these relationships is crucial for portfolio diversification, risk management, and forecasting in modern financial markets.</p>
 </section>
 <section id="literature-review" class="level2">
 <h2 class="anchored" data-anchor-id="literature-review">Literature Review</h2>
@@ -215,12 +215,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The <strong>S&amp;P 500</strong> serves as a broad measure of U.S. equity market performance and overall economic health. Research by <strong>Corbet et al.&nbsp;(2018)</strong> demonstrates significant spillover effects between traditional equity markets and cryptocurrency markets, particularly during periods of market stress. During the COVID-19 pandemic, both Bitcoin and the S&amp;P 500 experienced simultaneous crashes, suggesting increasing correlation.</p>
 <p>The <strong>VIX</strong> (CBOE Volatility Index), often called the “fear gauge,” measures expected market volatility. Studies by <strong>Whaley (2009)</strong> establish the VIX as a leading indicator of market sentiment. Recent research by <strong>Smales (2019)</strong> shows that Bitcoin exhibits increased correlation with traditional markets during high-volatility periods, suggesting that market fear affects all asset classes. The inverse relationship between VIX and S&amp;P 500 is well-documented, with VIX typically rising when stock prices fall.</p>
 <p>The <strong>U.S. Dollar Index (USD)</strong> summarizes the value of the U.S. dollar against a basket of major currencies. Dollar strength is linked to global risk sentiment and capital flows. A stronger dollar is often associated with tighter global financial conditions and may put pressure on risky assets such as equities and cryptocurrencies.</p>
-<p>The <strong>NASDAQ Composite Index</strong> serves as a growth-oriented measure of U.S. equity performance, with a heavy weighting toward technology firms. Prior work (e.g., Corbet et al.&nbsp;2020) suggests that cryptocurrency markets often co-move more strongly with technology-driven equity indices than with broad-market indices such as the S&amp;P 500. The NASDAQ therefore provides an additional lens for examining equity–crypto linkages, particularly during periods of rapid innovation or heightened risk appetite.</p>
 <p><strong>Variable Justification</strong>:</p>
 <p>Based on this literature, I focus on the following relationships:</p>
 <ol type="1">
 <li><strong>Bitcoin returns</strong> may be influenced by traditional market performance (SP500) and market volatility/fear (VIX).</li>
-<li><strong>SP500 and VIX</strong> have a well-documented inverse relationship, when stocks fall, fear rises.</li>
+<li><strong>SP500 and VIX</strong> have a well-documented inverse relationship—when stocks fall, fear rises.</li>
 <li><strong>Dollar strength (USD)</strong> may be related to risk sentiment and interact with equity and crypto markets.</li>
 <li>These variables likely exhibit <strong>dynamic and possibly bidirectional</strong> relationships, motivating multivariate time series models.</li>
 </ol>
@@ -250,8 +249,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 - <em>Rationale</em>: Explore how equity and crypto markets relate to changes in the broad U.S. dollar index.</p>
 <p><strong>Model 5 (VAR)</strong>: [Bitcoin_ret, SP500_ret, VIX_ret]<br>
 - <em>Rationale</em>: Capture bidirectional relationships and dynamic interactions among cryptocurrency, equities, and volatility.</p>
-<p><strong>Model 6 (VAR)</strong>: [NASDAQ_ret ~ SP500_ret + VIX_ret]<br>
-- <strong>Rationale</strong>: Assess whether NASDAQ movements are primarily driven by broad equity conditions and market volatility, and whether NASDAQ behaves similarly or differently from the S&amp;P 500 when exposed to market stress.</p>
+<p><strong>For this homework, I focus primarily on the ARIMAX models (Models 1–4) and a VAR model including Bitcoin, SP500, and VIX.</strong></p>
 <hr>
 <div class="cell">
 <details class="code-fold">
@@ -288,33 +286,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>sp500_data <span class="ot">&lt;-</span> <span class="fu">load_fred_data</span>(<span class="st">"SP500"</span>,    start_date, end_date)</span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>vix_data   <span class="ot">&lt;-</span> <span class="fu">load_fred_data</span>(<span class="st">"VIXCLS"</span>,   start_date, end_date)</span>
 <span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>btc_data   <span class="ot">&lt;-</span> <span class="fu">load_fred_data</span>(<span class="st">"CBBTCUSD"</span>, start_date, end_date)</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>usd_data   <span class="ot">&lt;-</span> <span class="fu">load_fred_data</span>(<span class="st">"DTWEXBGS"</span>, start_date, end_date) </span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>nasdaq_data <span class="ot">&lt;-</span> <span class="fu">load_fred_data</span>(<span class="st">"NASDAQCOM"</span>, start_date, end_date) <span class="co"># NEW: USD</span></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>merged <span class="ot">&lt;-</span> <span class="fu">merge</span>(</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">SP500   =</span> sp500_data,</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="at">VIX     =</span> vix_data,</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="at">Bitcoin =</span> btc_data,</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="at">USD     =</span> usd_data,</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="at">NASDAQ  =</span> nasdaq_data</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>price_data <span class="ot">&lt;-</span> <span class="fu">fortify.zoo</span>(merged)</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(price_data) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Date"</span>,<span class="st">"SP500"</span>,<span class="st">"VIX"</span>,<span class="st">"Bitcoin"</span>,<span class="st">"USD"</span>, <span class="st">"NASDAQ"</span>)</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>price_data <span class="ot">&lt;-</span> price_data <span class="sc">|&gt;</span> <span class="fu">arrange</span>(Date) <span class="sc">|&gt;</span> <span class="fu">na.omit</span>()</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>usd_data   <span class="ot">&lt;-</span> <span class="fu">load_fred_data</span>(<span class="st">"DTWEXBGS"</span>, start_date, end_date)  <span class="co"># NEW: USD</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>merged <span class="ot">&lt;-</span> <span class="fu">merge</span>(</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="at">SP500   =</span> sp500_data,</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">VIX     =</span> vix_data,</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="at">Bitcoin =</span> btc_data,</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="at">USD     =</span> usd_data</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>price_data <span class="ot">&lt;-</span> <span class="fu">fortify.zoo</span>(merged)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(price_data) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Date"</span>,<span class="st">"SP500"</span>,<span class="st">"VIX"</span>,<span class="st">"Bitcoin"</span>,<span class="st">"USD"</span>)</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>price_data <span class="ot">&lt;-</span> price_data <span class="sc">|&gt;</span> <span class="fu">arrange</span>(Date) <span class="sc">|&gt;</span> <span class="fu">na.omit</span>()</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Daily log-returns (stationary)</span></span>
 <span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Daily log-returns (stationary)</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>returns <span class="ot">&lt;-</span> price_data <span class="sc">|&gt;</span></span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(</span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="at">SP500_ret   =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(SP500))),</span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="at">VIX_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(VIX))),</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="at">Bitcoin_ret =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(Bitcoin))),</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="at">USD_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(USD))),</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="at">NASDAQ_ret  =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(NASDAQ)))  <span class="co"># NEW: USD returns</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="fu">na.omit</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>returns <span class="ot">&lt;-</span> price_data <span class="sc">|&gt;</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="at">SP500_ret   =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(SP500))),</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="at">VIX_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(VIX))),</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="at">Bitcoin_ret =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(Bitcoin))),</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="at">USD_ret     =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">diff</span>(<span class="fu">log</span>(USD)))  <span class="co"># NEW: USD returns</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="fu">na.omit</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
@@ -371,7 +366,6 @@ VIX_ret          -0.221    -0.728   1.000</code></pre>
 <pre><code>ADF p-values → BTC: 0.0100 | SPX: 0.0100 | VIX: 0.0100</code></pre>
 </div>
 </div>
-<p>Bitcoin returns were modeled using SP500 and VIX as predictors. BTC is modestly correlated with SPX (0.28) and weakly negatively correlated with VIX (–0.22). All series are stationary (ADF p = 0.01), so they are appropriate exogenous regressors.</p>
 </div>
 <div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
 <div class="cell">
@@ -383,7 +377,7 @@ VIX_ret          -0.221    -0.728   1.000</code></pre>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>X   <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(returns[, <span class="fu">c</span>(<span class="st">"SP500_ret"</span>,<span class="st">"VIX_ret"</span>)])</span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>XS  <span class="ot">&lt;-</span> <span class="fu">scale</span>(X)  <span class="co"># keep attributes for future scaling</span></span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Auto.ARIMA with xreg</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Method 1 — Auto.ARIMA with xreg</span></span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>m_btc_auto <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">auto.arima</span>(y, <span class="at">xreg =</span> XS, <span class="at">seasonal =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUTO.ARIMA with xreg summary:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">summary</span>(m_btc_auto))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -411,7 +405,7 @@ Training set -0.001210254</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Manual: OLS then ARIMA on residuals, finally ARIMAX with that order</span></span>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Method 2 — Manual: OLS then ARIMA on residuals, finally ARIMAX with that order</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>ols <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> XS)</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">resid</span>(ols)</span>
@@ -443,7 +437,6 @@ Training set -2.889967e-07 0.03909278 0.02628258 84.64458 181.4527 0.6305882
 Training set -0.001210254</code></pre>
 </div>
 </div>
-<p>Both AUTO.ARIMA and manual testing selected the same structure: ARIMAX(0,0,1) with SP500_ret and VIX_ret as predictors. SP500_ret has a small positive effect on BTC returns, while VIX_ret has a very small negative effect.</p>
 </div>
 <div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
 <div class="cell">
@@ -471,7 +464,7 @@ Training set -0.001210254</code></pre>
 <span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>rmse_auto <span class="ot">&lt;-</span> <span class="fu">c</span>(rmse_auto, <span class="fu">sqrt</span>(<span class="fu">mean</span>((y_te <span class="sc">-</span> <span class="fu">as.numeric</span>(fc_a<span class="sc">$</span>mean))<span class="sc">^</span><span class="dv">2</span>)))</span>
 <span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="co"># manual </span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="co"># manual (use the order we found above)</span></span>
 <span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>fit_m <span class="ot">&lt;-</span> <span class="fu">try</span>(<span class="fu">Arima</span>(y_tr, <span class="at">order =</span> ord, <span class="at">xreg =</span> X_tr, <span class="at">include.mean =</span> <span class="cn">TRUE</span>), <span class="at">silent=</span><span class="cn">TRUE</span>)</span>
 <span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">inherits</span>(fit_m, <span class="st">"try-error"</span>)) {</span>
@@ -514,7 +507,6 @@ Training set -0.001210254</code></pre>
 <pre><code>Chosen by CV: AUTO.ARIMA</code></pre>
 </div>
 </div>
-<p>Rolling CV showed identical RMSE for Auto and Manual (0.02625), indicating the model is stable and no more complex structure is needed. AUTO.ARIMA was selected.</p>
 </div>
 <div id="tabset-1-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-5-tab">
 <div class="cell">
@@ -571,7 +563,7 @@ Training set -0.001210254</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Equation print </span></span>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Equation print (regression part only)</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>co <span class="ot">&lt;-</span> <span class="fu">coef</span>(best_model)</span>
 <span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>b_spx <span class="ot">&lt;-</span> co[<span class="fu">grep</span>(<span class="st">"SP500_ret"</span>, <span class="fu">names</span>(co))]</span>
@@ -592,7 +584,6 @@ Regression portion (on standardized xreg):</code></pre>
 <pre><code>BTC_ret_t = 0.0106·SP500_ret_std_t -0.0014·VIX_ret_std_t + ARMA errors</code></pre>
 </div>
 </div>
-<p>Final ARIMAX model: BTC_ret = 0.0106·SP500_ret – 0.0014·VIX_ret + MA(1) errors Residuals pass diagnostics (Ljung–Box p = 0.27), confirming the model sufficiently captures all structure in the data.</p>
 </div>
 <div id="tabset-1-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-6-tab">
 <div class="cell">
@@ -600,7 +591,7 @@ Regression portion (on standardized xreg):</code></pre>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>H <span class="ot">&lt;-</span> <span class="dv">30</span></span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Forecast </span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Forecast exogenous returns first</span></span>
 <span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>spx_fc <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>SP500_ret), <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
 <span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>vix_fc <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>VIX_ret),   <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
@@ -625,7 +616,7 @@ Regression portion (on standardized xreg):</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert </span></span>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert return forecast to a *price level* path (for intuition)</span></span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>last_lvl <span class="ot">&lt;-</span> <span class="fu">tail</span>(price_data<span class="sc">$</span>Bitcoin, <span class="dv">1</span>)</span>
 <span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>lvl_path <span class="ot">&lt;-</span> last_lvl <span class="sc">*</span> <span class="fu">exp</span>(<span class="fu">cumsum</span>(<span class="fu">as.numeric</span>(btc_ret_fc<span class="sc">$</span>mean)))</span>
@@ -661,7 +652,6 @@ Regression portion (on standardized xreg):</code></pre>
 <pre><code>Forecasted BTC level at step 30: 122879.60</code></pre>
 </div>
 </div>
-<p>Return forecasts center near zero, as expected for financial returns. Converting returns to levels results in a gradual upward projected BTC path (≈122,880 at 30 steps), driven by small positive expected returns rather than strong predictive power.</p>
 </div>
 </div>
 </div>
@@ -715,14 +705,13 @@ VIX_ret        -0.728      -0.221   1.000</code></pre>
 <pre><code>ADF p-values → SPX: 0.0100 | BTC: 0.0100 | VIX: 0.0100</code></pre>
 </div>
 </div>
-<p>SPX returns show positive correlation with Bitcoin (0.28) and strong negative correlation with VIX (–0.73). All three return series are stationary (ADF p = 0.01), making BTC and VIX appropriate exogenous predictors.</p>
 </div>
 <div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>y2   <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(returns<span class="sc">$</span>SP500_ret)</span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>X2   <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(returns[, <span class="fu">c</span>(<span class="st">"Bitcoin_ret"</span>,<span class="st">"VIX_ret"</span>)])  </span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>X2   <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(returns[, <span class="fu">c</span>(<span class="st">"Bitcoin_ret"</span>,<span class="st">"VIX_ret"</span>)])  <span class="co"># exog: BTC, VIX returns</span></span>
 <span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>X2S  <span class="ot">&lt;-</span> <span class="fu">scale</span>(X2)</span>
 <span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>m_spx_auto <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">auto.arima</span>(y2, <span class="at">xreg =</span> X2S, <span class="at">seasonal =</span> <span class="cn">FALSE</span>)</span>
@@ -781,7 +770,6 @@ Training set -7.875776e-07 0.008229595 0.00538296 174.237 394.5584 0.439583
 Training set 0.02334035</code></pre>
 </div>
 </div>
-<p>AUTO.ARIMA and manual testing both select the same structure: ARIMAX(2,0,2) with BTC_ret and VIX_ret as regressors. BTC_ret has a tiny positive effect, while VIX_ret has a stronger negative effect on SPX returns.</p>
 </div>
 <div id="tabset-2-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-4-tab">
 <div class="cell">
@@ -836,7 +824,6 @@ Training set 0.02334035</code></pre>
 <pre><code>Chosen by CV: AUTO.ARIMA</code></pre>
 </div>
 </div>
-<p>Rolling CV produced the same RMSE for Auto and Manual (0.00574), confirming the model is stable and AUTO.ARIMA is preferred.</p>
 </div>
 <div id="tabset-2-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-5-tab">
 <div class="cell">
@@ -910,7 +897,6 @@ Regression portion (standardized xreg):</code></pre>
 <pre><code>SPX_ret_t = 0.0014·BTC_ret_std_t -0.0087·VIX_ret_std_t + ARMA errors</code></pre>
 </div>
 </div>
-<p>Final SPX ARIMAX model: SPX_ret = 0.0014·BTC_ret – 0.0087·VIX_ret + ARMA(2,2) errors Residuals show slight autocorrelation (Ljung–Box p = 0.0001), but still acceptable for forecasting given the near-white-noise nature of returns.</p>
 </div>
 <div id="tabset-2-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-6-tab">
 <div class="cell">
@@ -961,7 +947,6 @@ Regression portion (standardized xreg):</code></pre>
 <pre><code>Last SPX level: 6631.96 | Forecasted level @30: 6694.15</code></pre>
 </div>
 </div>
-<p>Return forecasts remain centered near zero, and the level projection shows mild upward drift (≈6694 at step 30), reflecting cumulative small positive expected returns rather than strong predictive signals.</p>
 </div>
 </div>
 </div>
@@ -1015,19 +1000,17 @@ SP500_ret    -0.728       0.283     1.000</code></pre>
 <pre><code>ADF p-values → VIX: 0.0100 | BTC: 0.0100 | SPX: 0.0100</code></pre>
 </div>
 </div>
-<p>VIX is strongly negatively correlated with SP500 (–0.73) and mildly with BTC (–0.22). Both included.</p>
 </div>
 <div id="tabset-3-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-3-tab">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>y3   <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(returns<span class="sc">$</span>VIX_ret)</span>
-<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>X3   <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(returns[, <span class="fu">c</span>(<span class="st">"Bitcoin_ret"</span>,<span class="st">"SP500_ret"</span>)])  </span>
-<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a><span class="co"># exog: BTC, SPX returns</span></span>
-<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>X3S  <span class="ot">&lt;-</span> <span class="fu">scale</span>(X3)</span>
-<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a>m_vix_auto <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">auto.arima</span>(y3, <span class="at">xreg =</span> X3S, <span class="at">seasonal =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb70-7"><a href="#cb70-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUTO.ARIMA (VIX) summary:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">summary</span>(m_vix_auto))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>X3   <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(returns[, <span class="fu">c</span>(<span class="st">"Bitcoin_ret"</span>,<span class="st">"SP500_ret"</span>)])  <span class="co"># exog: BTC, SPX returns</span></span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>X3S  <span class="ot">&lt;-</span> <span class="fu">scale</span>(X3)</span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>m_vix_auto <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">auto.arima</span>(y3, <span class="at">xreg =</span> X3S, <span class="at">seasonal =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUTO.ARIMA (VIX) summary:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">summary</span>(m_vix_auto))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>AUTO.ARIMA (VIX) summary:</code></pre>
@@ -1086,7 +1069,6 @@ Training set error measures:
 Training set -1.34067e-05 0.05312549 0.03696717 NaN  Inf 0.4531368 0.0001913375</code></pre>
 </div>
 </div>
-<p>Series stationary (ADF p = 0.01). AUTO.ARIMA selected ARIMA(3,0,4) errors.</p>
 </div>
 <div id="tabset-3-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-4-tab">
 <div class="cell">
@@ -1141,7 +1123,6 @@ Training set -1.34067e-05 0.05312549 0.03696717 NaN  Inf 0.4531368 0.0001913375<
 <pre><code>Chosen by CV: MANUAL ARIMAX</code></pre>
 </div>
 </div>
-<p>Manual model slightly better (RMSE: 0.04936, vs Auto 0.04964) → Manual ARIMAX selected.</p>
 </div>
 <div id="tabset-3-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-5-tab">
 <div class="cell">
@@ -1216,7 +1197,6 @@ Regression portion (standardized xreg):</code></pre>
 <pre><code>VIX_ret_t = -0.0004·BTC_ret_std_t -0.0587·SPX_ret_std_t + ARMA errors</code></pre>
 </div>
 </div>
-<p>VIX_ret = –0.0004·BTC_ret – 0.0587·SPX_ret + ARMA(3,4) errors. SP500 has a sizable negative effect: when markets rise, VIX falls. BTC’s effect is negligible.</p>
 </div>
 <div id="tabset-3-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-6-tab">
 <div class="cell">
@@ -1224,7 +1204,7 @@ Regression portion (standardized xreg):</code></pre>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>H <span class="ot">&lt;-</span> <span class="dv">30</span></span>
 <span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Forecast BTC &amp; SPX returns</span></span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Forecast exogenous BTC &amp; SPX returns</span></span>
 <span id="cb91-4"><a href="#cb91-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb91-5"><a href="#cb91-5" aria-hidden="true" tabindex="-1"></a>btc_fc3 <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>Bitcoin_ret), <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
 <span id="cb91-6"><a href="#cb91-6" aria-hidden="true" tabindex="-1"></a>spx_fc3 <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>SP500_ret),  <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
@@ -1267,7 +1247,6 @@ Regression portion (standardized xreg):</code></pre>
 <pre><code>Last VIX level: 15.70 | Forecasted level @30: 15.02</code></pre>
 </div>
 </div>
-<p>VIX level path drifts gradually downward: ~15.70 → 15.02 over 30 days.</p>
 </div>
 </div>
 </div>
@@ -1333,7 +1312,6 @@ p-value</code></pre>
 <pre><code>ADF p-value → USD_ret: 0.0100</code></pre>
 </div>
 </div>
-<p>USD shows only weak correlations with other markets (|ρ| ≤ 0.31). No strong economic linkages, and USD returns are stationary (ADF p = 0.01), so BTC_ret and SPX_ret are allowed as exogenous regressors but are expected to have minimal impact.</p>
 </div>
 <div id="tabset-4-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-3-tab">
 <div class="cell">
@@ -1412,7 +1390,6 @@ Training set 2.214595e-08 0.003023181 0.002250451 -13.98104 235.3292 0.6810637
 Training set 0.0007130133</code></pre>
 </div>
 </div>
-<p>AUTO.ARIMA selects a very simple ARIMAX(0,0,0), effectively white noise with small regressors. Manual exploration finds a slightly richer ARIMA(3,0,1), but both detect tiny, insignificant coefficients, reinforcing that USD is largely unpredictable.</p>
 </div>
 <div id="tabset-4-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-4-tab">
 <div class="cell">
@@ -1487,7 +1464,6 @@ Training set 0.0007130133</code></pre>
 <pre><code>Chosen by CV: AUTO.ARIMA</code></pre>
 </div>
 </div>
-<p>Rolling CV shows Auto and Manual models perform almost identically (RMSE ≈ 0.00328). → AUTO.ARIMA chosen, since added AR/MA structure brings no benefit.</p>
 </div>
 <div id="tabset-4-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-5-tab">
 <div class="cell">
@@ -1565,7 +1541,6 @@ Regression portion (standardized xreg):</code></pre>
 <pre><code>USD_ret_t = -0.0003·BTC_ret_std_t -0.0009·SPX_ret_std_t + ARMA errors</code></pre>
 </div>
 </div>
-<p>Final model: USD_ret = –0.0003·BTC_ret – 0.0009·SPX_ret + white-noise errors. Residuals pass all diagnostics, confirming near-pure randomness.</p>
 </div>
 <div id="tabset-4-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-6-tab">
 <div class="cell">
@@ -1573,7 +1548,7 @@ Regression portion (standardized xreg):</code></pre>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb124"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a>H <span class="ot">&lt;-</span> <span class="dv">30</span></span>
 <span id="cb124-2"><a href="#cb124-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb124-3"><a href="#cb124-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Forecast BTC &amp; SPX returns</span></span>
+<span id="cb124-3"><a href="#cb124-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Forecast BTC &amp; SPX returns as xreg</span></span>
 <span id="cb124-4"><a href="#cb124-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb124-5"><a href="#cb124-5" aria-hidden="true" tabindex="-1"></a>btc_fc_usd <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>Bitcoin_ret), <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
 <span id="cb124-6"><a href="#cb124-6" aria-hidden="true" tabindex="-1"></a>spx_fc_usd <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>SP500_ret),  <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
@@ -1632,398 +1607,12 @@ Regression portion (standardized xreg):</code></pre>
 <pre><code>Forecasted USD level @30: 120.10</code></pre>
 </div>
 </div>
-<p>Forecasted returns hover around zero, and the level path remains flat (~120.10), indicating no momentum and no cross-asset predictability.</p>
-</div>
-</div>
-</div>
-</section>
-<section id="nasdaq" class="level2">
-<h2 class="anchored" data-anchor-id="nasdaq">NASDAQ</h2>
-<div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true">Visualization</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false">Variable Selection</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-3" role="tab" aria-controls="tabset-5-3" aria-selected="false">Initial Selection</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-4" role="tab" aria-controls="tabset-5-4" aria-selected="false">Cross Validation</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-5-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-5" role="tab" aria-controls="tabset-5-5" aria-selected="false">Model Creation</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-6-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-6" role="tab" aria-controls="tabset-5-6" aria-selected="false">Forecasting</a></li></ul>
-<div class="tab-content">
-<div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(price_data, <span class="fu">aes</span>(Date, NASDAQ)) <span class="sc">+</span></span>
-<span id="cb130-2"><a href="#cb130-2" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb130-3"><a href="#cb130-3" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(<span class="at">title=</span><span class="st">"NASDAQ (Level)"</span>, <span class="at">x=</span><span class="cn">NULL</span>, <span class="at">y=</span><span class="cn">NULL</span>)</span>
-<span id="cb130-4"><a href="#cb130-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb130-5"><a href="#cb130-5" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(returns, <span class="fu">aes</span>(Date, NASDAQ_ret)) <span class="sc">+</span></span>
-<span id="cb130-6"><a href="#cb130-6" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb130-7"><a href="#cb130-7" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(<span class="at">title=</span><span class="st">"NASDAQ (Log-Returns)"</span>, <span class="at">x=</span><span class="cn">NULL</span>, <span class="at">y=</span><span class="cn">NULL</span>)</span>
-<span id="cb130-8"><a href="#cb130-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb130-9"><a href="#cb130-9" aria-hidden="true" tabindex="-1"></a>gridExtra<span class="sc">::</span><span class="fu">grid.arrange</span>(p1, p2, <span class="at">nrow=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="multivariate-ts-models_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="960"></p>
-</figure>
-</div>
-</div>
-</div>
-</div>
-<div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb131"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb131-1"><a href="#cb131-1" aria-hidden="true" tabindex="-1"></a>cm_nas <span class="ot">&lt;-</span> <span class="fu">cor</span>(returns[, <span class="fu">c</span>(<span class="st">"NASDAQ_ret"</span>,<span class="st">"SP500_ret"</span>,<span class="st">"VIX_ret"</span>,<span class="st">"Bitcoin_ret"</span>)],</span>
-<span id="cb131-2"><a href="#cb131-2" aria-hidden="true" tabindex="-1"></a><span class="at">use=</span><span class="st">"complete.obs"</span>)</span>
-<span id="cb131-3"><a href="#cb131-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(cm_nas, <span class="dv">3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>            NASDAQ_ret SP500_ret VIX_ret Bitcoin_ret
-NASDAQ_ret       1.000     0.950  -0.718       0.299
-SP500_ret        0.950     1.000  -0.728       0.283
-VIX_ret         -0.718    -0.728   1.000      -0.221
-Bitcoin_ret      0.299     0.283  -0.221       1.000</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stationarity tests</span></span>
-<span id="cb133-2"><a href="#cb133-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb133-3"><a href="#cb133-3" aria-hidden="true" tabindex="-1"></a>adf_nas <span class="ot">&lt;-</span> <span class="fu">adf.test</span>(returns<span class="sc">$</span>NASDAQ_ret)</span>
-<span id="cb133-4"><a href="#cb133-4" aria-hidden="true" tabindex="-1"></a>adf_spx <span class="ot">&lt;-</span> <span class="fu">adf.test</span>(returns<span class="sc">$</span>SP500_ret)</span>
-<span id="cb133-5"><a href="#cb133-5" aria-hidden="true" tabindex="-1"></a>adf_vix <span class="ot">&lt;-</span> <span class="fu">adf.test</span>(returns<span class="sc">$</span>VIX_ret)</span>
-<span id="cb133-6"><a href="#cb133-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb133-7"><a href="#cb133-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"ADF p-values → NASDAQ: %.4f | SPX: %.4f | VIX: %.4f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb133-8"><a href="#cb133-8" aria-hidden="true" tabindex="-1"></a>adf_nas<span class="sc">$</span>p.value, adf_spx<span class="sc">$</span>p.value, adf_vix<span class="sc">$</span>p.value))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>ADF p-values → NASDAQ: 0.0100 | SPX: 0.0100 | VIX: 0.0100</code></pre>
-</div>
-</div>
-<p>NASDAQ is extremely tightly linked to SP500 (ρ = 0.95) and strongly negatively correlated with VIX (fear) at –0.72. Bitcoin has only a mild positive relationship. All series are stationary in returns (ADF p = 0.01), so SP500_ret and VIX_ret are included as meaningful predictors.</p>
-</div>
-<div id="tabset-5-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-3-tab">
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Target series: NASDAQ returns</span></span>
-<span id="cb135-2"><a href="#cb135-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-3"><a href="#cb135-3" aria-hidden="true" tabindex="-1"></a>y_nas <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(returns<span class="sc">$</span>NASDAQ_ret)</span>
-<span id="cb135-4"><a href="#cb135-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-5"><a href="#cb135-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Exogenous : SP500 + VIX </span></span>
-<span id="cb135-6"><a href="#cb135-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-7"><a href="#cb135-7" aria-hidden="true" tabindex="-1"></a>X_nas <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(returns[, <span class="fu">c</span>(<span class="st">"SP500_ret"</span>,<span class="st">"VIX_ret"</span>)])</span>
-<span id="cb135-8"><a href="#cb135-8" aria-hidden="true" tabindex="-1"></a>X_nasS <span class="ot">&lt;-</span> <span class="fu">scale</span>(X_nas)</span>
-<span id="cb135-9"><a href="#cb135-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-10"><a href="#cb135-10" aria-hidden="true" tabindex="-1"></a><span class="co">#  AUTO.ARIMA </span></span>
-<span id="cb135-11"><a href="#cb135-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-12"><a href="#cb135-12" aria-hidden="true" tabindex="-1"></a>m_nas_auto <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">auto.arima</span>(y_nas, <span class="at">xreg =</span> X_nasS, <span class="at">seasonal =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb135-13"><a href="#cb135-13" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUTO.ARIMA (NASDAQ) summary:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">summary</span>(m_nas_auto))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>AUTO.ARIMA (NASDAQ) summary:</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Series: y_nas 
-Regression with ARIMA(2,0,2) errors 
-
-Coefficients:
-        ar1      ar2      ma1     ma2  intercept  SP500_ret  VIX_ret
-      1.435  -0.9798  -1.4351  0.9674      7e-04     0.0141   -8e-04
-s.e.  0.014   0.0166   0.0167  0.0207      1e-04     0.0002    2e-04
-
-sigma^2 = 2.297e-05:  log likelihood = 6540.88
-AIC=-13065.76   AICc=-13065.67   BIC=-13022.41
-
-Training set error measures:
-                        ME        RMSE         MAE      MPE     MAPE      MASE
-Training set -2.121754e-06 0.004782684 0.003564837 58.81953 185.9792 0.2263571
-                     ACF1
-Training set -0.006241071</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb138"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a><span class="co">#  Manual ARIMAX</span></span>
-<span id="cb138-2"><a href="#cb138-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb138-3"><a href="#cb138-3" aria-hidden="true" tabindex="-1"></a>ols_nas <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_nas <span class="sc">~</span> X_nasS)</span>
-<span id="cb138-4"><a href="#cb138-4" aria-hidden="true" tabindex="-1"></a>res_nas <span class="ot">&lt;-</span> <span class="fu">resid</span>(ols_nas)</span>
-<span id="cb138-5"><a href="#cb138-5" aria-hidden="true" tabindex="-1"></a>res_nas_arima <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">auto.arima</span>(res_nas, <span class="at">seasonal =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb138-6"><a href="#cb138-6" aria-hidden="true" tabindex="-1"></a>ord_nas <span class="ot">&lt;-</span> <span class="fu">arimaorder</span>(res_nas_arima)</span>
-<span id="cb138-7"><a href="#cb138-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb138-8"><a href="#cb138-8" aria-hidden="true" tabindex="-1"></a>m_nas_manual <span class="ot">&lt;-</span> <span class="fu">Arima</span>(y_nas, <span class="at">order =</span> ord_nas,</span>
-<span id="cb138-9"><a href="#cb138-9" aria-hidden="true" tabindex="-1"></a><span class="at">xreg =</span> X_nasS, <span class="at">include.mean =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb138-10"><a href="#cb138-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb138-11"><a href="#cb138-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">MANUAL ARIMAX (NASDAQ) summary:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>
-MANUAL ARIMAX (NASDAQ) summary:</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(m_nas_manual))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Series: y_nas 
-Regression with ARIMA(0,0,0) errors 
-
-Coefficients:
-      intercept  SP500_ret  VIX_ret
-          7e-04     0.0141   -9e-04
-s.e.      1e-04     0.0002    2e-04
-
-sigma^2 = 2.311e-05:  log likelihood = 6534.01
-AIC=-13060.02   AICc=-13060   BIC=-13038.35
-
-Training set error measures:
-                        ME        RMSE         MAE      MPE     MAPE      MASE
-Training set -1.042672e-15 0.004802773 0.003564892 55.82625 183.6333 0.2263606
-                      ACF1
-Training set -4.568932e-05</code></pre>
-</div>
-</div>
-<p>AUTO.ARIMA chooses ARIMAX(2,0,2), capturing strong autocorrelation from equity momentum. Coefficients show NASDAQ rises with SPX (≈ 0.0141) and falls when VIX increases (≈ –0.0008), matching market intuition. Manual selection explored simpler structures, but AUTO clearly fit better.</p>
-</div>
-<div id="tabset-5-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-4-tab">
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb142"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a>H <span class="ot">&lt;-</span> <span class="dv">20</span></span>
-<span id="cb142-2"><a href="#cb142-2" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">10</span></span>
-<span id="cb142-3"><a href="#cb142-3" aria-hidden="true" tabindex="-1"></a>n_nas <span class="ot">&lt;-</span> <span class="fu">length</span>(y_nas)</span>
-<span id="cb142-4"><a href="#cb142-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-5"><a href="#cb142-5" aria-hidden="true" tabindex="-1"></a>rmse_auto_nas <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
-<span id="cb142-6"><a href="#cb142-6" aria-hidden="true" tabindex="-1"></a>rmse_manual_nas <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
-<span id="cb142-7"><a href="#cb142-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-8"><a href="#cb142-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) {</span>
-<span id="cb142-9"><a href="#cb142-9" aria-hidden="true" tabindex="-1"></a>tr_end <span class="ot">&lt;-</span> n_nas <span class="sc">-</span> H<span class="sc">*</span>(K <span class="sc">-</span> i <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb142-10"><a href="#cb142-10" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (tr_end <span class="sc">&lt;</span> <span class="dv">250</span>) <span class="cf">break</span></span>
-<span id="cb142-11"><a href="#cb142-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-12"><a href="#cb142-12" aria-hidden="true" tabindex="-1"></a>y_tr <span class="ot">&lt;-</span> y_nas[<span class="dv">1</span><span class="sc">:</span>tr_end]</span>
-<span id="cb142-13"><a href="#cb142-13" aria-hidden="true" tabindex="-1"></a>y_te <span class="ot">&lt;-</span> y_nas[(tr_end<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>(tr_end<span class="sc">+</span>H)]</span>
-<span id="cb142-14"><a href="#cb142-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-15"><a href="#cb142-15" aria-hidden="true" tabindex="-1"></a>X_tr <span class="ot">&lt;-</span> X_nasS[<span class="dv">1</span><span class="sc">:</span>tr_end, , drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
-<span id="cb142-16"><a href="#cb142-16" aria-hidden="true" tabindex="-1"></a>X_te <span class="ot">&lt;-</span> X_nasS[(tr_end<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>(tr_end<span class="sc">+</span>H), , drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
-<span id="cb142-17"><a href="#cb142-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-18"><a href="#cb142-18" aria-hidden="true" tabindex="-1"></a><span class="co"># AUTO.ARIMA</span></span>
-<span id="cb142-19"><a href="#cb142-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-20"><a href="#cb142-20" aria-hidden="true" tabindex="-1"></a>fit_a <span class="ot">&lt;-</span> <span class="fu">try</span>(<span class="fu">auto.arima</span>(y_tr, <span class="at">xreg =</span> X_tr, <span class="at">seasonal =</span> <span class="cn">FALSE</span>), <span class="at">silent=</span><span class="cn">TRUE</span>)</span>
-<span id="cb142-21"><a href="#cb142-21" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">inherits</span>(fit_a, <span class="st">"try-error"</span>)) {</span>
-<span id="cb142-22"><a href="#cb142-22" aria-hidden="true" tabindex="-1"></a>fc <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit_a, <span class="at">xreg =</span> X_te, <span class="at">h =</span> H)</span>
-<span id="cb142-23"><a href="#cb142-23" aria-hidden="true" tabindex="-1"></a>rmse_auto_nas <span class="ot">&lt;-</span> <span class="fu">c</span>(rmse_auto_nas,</span>
-<span id="cb142-24"><a href="#cb142-24" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((y_te <span class="sc">-</span> <span class="fu">as.numeric</span>(fc<span class="sc">$</span>mean))<span class="sc">^</span><span class="dv">2</span>)))</span>
-<span id="cb142-25"><a href="#cb142-25" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb142-26"><a href="#cb142-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-27"><a href="#cb142-27" aria-hidden="true" tabindex="-1"></a><span class="co"># MANUAL ARIMAX</span></span>
-<span id="cb142-28"><a href="#cb142-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-29"><a href="#cb142-29" aria-hidden="true" tabindex="-1"></a>fit_m <span class="ot">&lt;-</span> <span class="fu">try</span>(<span class="fu">Arima</span>(y_tr, <span class="at">order=</span>ord_nas, <span class="at">xreg=</span>X_tr, <span class="at">include.mean=</span><span class="cn">TRUE</span>),</span>
-<span id="cb142-30"><a href="#cb142-30" aria-hidden="true" tabindex="-1"></a><span class="at">silent=</span><span class="cn">TRUE</span>)</span>
-<span id="cb142-31"><a href="#cb142-31" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">inherits</span>(fit_m, <span class="st">"try-error"</span>)) {</span>
-<span id="cb142-32"><a href="#cb142-32" aria-hidden="true" tabindex="-1"></a>fc <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit_m, <span class="at">xreg =</span> X_te, <span class="at">h =</span> H)</span>
-<span id="cb142-33"><a href="#cb142-33" aria-hidden="true" tabindex="-1"></a>rmse_manual_nas <span class="ot">&lt;-</span> <span class="fu">c</span>(rmse_manual_nas,</span>
-<span id="cb142-34"><a href="#cb142-34" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((y_te <span class="sc">-</span> <span class="fu">as.numeric</span>(fc<span class="sc">$</span>mean))<span class="sc">^</span><span class="dv">2</span>)))</span>
-<span id="cb142-35"><a href="#cb142-35" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb142-36"><a href="#cb142-36" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb142-37"><a href="#cb142-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-38"><a href="#cb142-38" aria-hidden="true" tabindex="-1"></a>cv_nas <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb142-39"><a href="#cb142-39" aria-hidden="true" tabindex="-1"></a><span class="at">Fold  =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">max</span>(<span class="fu">length</span>(rmse_auto_nas), <span class="fu">length</span>(rmse_manual_nas)),</span>
-<span id="cb142-40"><a href="#cb142-40" aria-hidden="true" tabindex="-1"></a><span class="at">Auto  =</span> rmse_auto_nas,</span>
-<span id="cb142-41"><a href="#cb142-41" aria-hidden="true" tabindex="-1"></a><span class="at">Manual=</span> rmse_manual_nas</span>
-<span id="cb142-42"><a href="#cb142-42" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span> <span class="fu">pivot_longer</span>(<span class="sc">-</span>Fold, <span class="at">names_to=</span><span class="st">"Model"</span>, <span class="at">values_to=</span><span class="st">"RMSE"</span>)</span>
-<span id="cb142-43"><a href="#cb142-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb142-44"><a href="#cb142-44" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">na.omit</span>(cv_nas), <span class="fu">aes</span>(Fold, RMSE, <span class="at">color=</span>Model)) <span class="sc">+</span></span>
-<span id="cb142-45"><a href="#cb142-45" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb142-46"><a href="#cb142-46" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb142-47"><a href="#cb142-47" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(<span class="at">title=</span><span class="st">"NASDAQ ARIMAX — Rolling CV RMSE"</span>,</span>
-<span id="cb142-48"><a href="#cb142-48" aria-hidden="true" tabindex="-1"></a><span class="at">x=</span><span class="st">"Fold"</span>, <span class="at">y=</span><span class="st">"RMSE"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="multivariate-ts-models_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="960"></p>
-</figure>
-</div>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb143"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Mean RMSE → Auto: %.5f | Manual: %.5f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb143-2"><a href="#cb143-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(rmse_auto_nas,   <span class="at">na.rm=</span><span class="cn">TRUE</span>),</span>
-<span id="cb143-3"><a href="#cb143-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(rmse_manual_nas, <span class="at">na.rm=</span><span class="cn">TRUE</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Mean RMSE → Auto: 0.00377 | Manual: 0.00378</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb145"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1" aria-hidden="true" tabindex="-1"></a>best_nas_is_auto <span class="ot">&lt;-</span> <span class="fu">mean</span>(rmse_auto_nas, <span class="at">na.rm=</span><span class="cn">TRUE</span>) <span class="sc">&lt;=</span></span>
-<span id="cb145-2"><a href="#cb145-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(rmse_manual_nas, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb145-3"><a href="#cb145-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb145-4"><a href="#cb145-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Chosen by CV: %s</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb145-5"><a href="#cb145-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ifelse</span>(best_nas_is_auto, <span class="st">"AUTO.ARIMA"</span>, <span class="st">"MANUAL ARIMAX"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Chosen by CV: AUTO.ARIMA</code></pre>
-</div>
-</div>
-<p>Rolling CV shows nearly identical errors for Auto vs Manual (RMSE ≈ 0.00377). → AUTO.ARIMA chosen, as the autoregressive structure provides slightly superior stability across folds.</p>
-</div>
-<div id="tabset-5-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-5-tab">
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb147"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1" aria-hidden="true" tabindex="-1"></a>best_nas <span class="ot">&lt;-</span> <span class="cf">if</span> (best_nas_is_auto) m_nas_auto <span class="cf">else</span> m_nas_manual</span>
-<span id="cb147-2"><a href="#cb147-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb147-3"><a href="#cb147-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Final NASDAQ model summary:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">summary</span>(best_nas))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Final NASDAQ model summary:</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Series: y_nas 
-Regression with ARIMA(2,0,2) errors 
-
-Coefficients:
-        ar1      ar2      ma1     ma2  intercept  SP500_ret  VIX_ret
-      1.435  -0.9798  -1.4351  0.9674      7e-04     0.0141   -8e-04
-s.e.  0.014   0.0166   0.0167  0.0207      1e-04     0.0002    2e-04
-
-sigma^2 = 2.297e-05:  log likelihood = 6540.88
-AIC=-13065.76   AICc=-13065.67   BIC=-13022.41
-
-Training set error measures:
-                        ME        RMSE         MAE      MPE     MAPE      MASE
-Training set -2.121754e-06 0.004782684 0.003564837 58.81953 185.9792 0.2263571
-                     ACF1
-Training set -0.006241071</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb150"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb150-1"><a href="#cb150-1" aria-hidden="true" tabindex="-1"></a>resid_nas <span class="ot">&lt;-</span> <span class="fu">residuals</span>(best_nas)</span>
-<span id="cb150-2"><a href="#cb150-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb150-3"><a href="#cb150-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb150-4"><a href="#cb150-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(resid_nas, <span class="at">type=</span><span class="st">"l"</span>, <span class="at">main=</span><span class="st">"NASDAQ Residuals"</span>); <span class="fu">abline</span>(<span class="at">h=</span><span class="dv">0</span>,<span class="at">lty=</span><span class="dv">2</span>); <span class="fu">grid</span>()</span>
-<span id="cb150-5"><a href="#cb150-5" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(resid_nas, <span class="at">main=</span><span class="st">"Residual ACF"</span>); <span class="fu">grid</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="multivariate-ts-models_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb151"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb151-1"><a href="#cb151-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span>
-<span id="cb151-2"><a href="#cb151-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb151-3"><a href="#cb151-3" aria-hidden="true" tabindex="-1"></a>lb_nas <span class="ot">&lt;-</span> <span class="fu">Box.test</span>(resid_nas, <span class="at">lag=</span><span class="dv">20</span>, <span class="at">type=</span><span class="st">"Ljung-Box"</span>)</span>
-<span id="cb151-4"><a href="#cb151-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Ljung-Box p (lag=20): %.4f</span><span class="sc">\n</span><span class="st">"</span>, lb_nas<span class="sc">$</span>p.value))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Ljung-Box p (lag=20): 0.4815</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb153"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb153-1"><a href="#cb153-1" aria-hidden="true" tabindex="-1"></a>co_nas <span class="ot">&lt;-</span> <span class="fu">coef</span>(best_nas)</span>
-<span id="cb153-2"><a href="#cb153-2" aria-hidden="true" tabindex="-1"></a>b_spx_nas <span class="ot">&lt;-</span> co_nas[<span class="fu">grep</span>(<span class="st">"SP500_ret"</span>, <span class="fu">names</span>(co_nas))]</span>
-<span id="cb153-3"><a href="#cb153-3" aria-hidden="true" tabindex="-1"></a>b_vix_nas <span class="ot">&lt;-</span> co_nas[<span class="fu">grep</span>(<span class="st">"VIX_ret"</span>,    <span class="fu">names</span>(co_nas))]</span>
-<span id="cb153-4"><a href="#cb153-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb153-5"><a href="#cb153-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Regression portion (standardized xreg):</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>
-Regression portion (standardized xreg):</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb155"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb155-1"><a href="#cb155-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(</span>
-<span id="cb155-2"><a href="#cb155-2" aria-hidden="true" tabindex="-1"></a><span class="st">"NASDAQ_ret_t = %.4f·SP500_ret_std_t %+ .4f·VIX_ret_std_t + ARMA errors</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb155-3"><a href="#cb155-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ifelse</span>(<span class="fu">length</span>(b_spx_nas)<span class="sc">==</span><span class="dv">0</span>,<span class="dv">0</span>,b_spx_nas),</span>
-<span id="cb155-4"><a href="#cb155-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ifelse</span>(<span class="fu">length</span>(b_vix_nas)<span class="sc">==</span><span class="dv">0</span>,<span class="dv">0</span>,b_vix_nas)</span>
-<span id="cb155-5"><a href="#cb155-5" aria-hidden="true" tabindex="-1"></a>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>NASDAQ_ret_t = 0.0141·SP500_ret_std_t -0.0008·VIX_ret_std_t + ARMA errors</code></pre>
-</div>
-</div>
-<p>Final model confirms the relationships: NASDAQ_ret increases with SPX_ret and decreases with VIX_ret, while AR/MA terms capture market persistence. Residuals pass diagnostics (Ljung–Box p = 0.48).</p>
-</div>
-<div id="tabset-5-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-6-tab">
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb157"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb157-1"><a href="#cb157-1" aria-hidden="true" tabindex="-1"></a>H <span class="ot">&lt;-</span> <span class="dv">30</span></span>
-<span id="cb157-2"><a href="#cb157-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb157-3"><a href="#cb157-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Forecast SPX &amp; VIX returns</span></span>
-<span id="cb157-4"><a href="#cb157-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb157-5"><a href="#cb157-5" aria-hidden="true" tabindex="-1"></a>spx_fc_nas <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>SP500_ret), <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
-<span id="cb157-6"><a href="#cb157-6" aria-hidden="true" tabindex="-1"></a>vix_fc_nas <span class="ot">&lt;-</span> forecast<span class="sc">::</span><span class="fu">forecast</span>(<span class="fu">auto.arima</span>(returns<span class="sc">$</span>VIX_ret),   <span class="at">h =</span> H)<span class="sc">$</span>mean</span>
-<span id="cb157-7"><a href="#cb157-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb157-8"><a href="#cb157-8" aria-hidden="true" tabindex="-1"></a>Xfut_nas <span class="ot">&lt;-</span> <span class="fu">cbind</span>(</span>
-<span id="cb157-9"><a href="#cb157-9" aria-hidden="true" tabindex="-1"></a><span class="at">SP500_ret =</span> <span class="fu">as.numeric</span>(spx_fc_nas),</span>
-<span id="cb157-10"><a href="#cb157-10" aria-hidden="true" tabindex="-1"></a><span class="at">VIX_ret   =</span> <span class="fu">as.numeric</span>(vix_fc_nas)</span>
-<span id="cb157-11"><a href="#cb157-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb157-12"><a href="#cb157-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb157-13"><a href="#cb157-13" aria-hidden="true" tabindex="-1"></a>Xfut_nasS <span class="ot">&lt;-</span> <span class="fu">scale</span>(</span>
-<span id="cb157-14"><a href="#cb157-14" aria-hidden="true" tabindex="-1"></a>Xfut_nas,</span>
-<span id="cb157-15"><a href="#cb157-15" aria-hidden="true" tabindex="-1"></a><span class="at">center =</span> <span class="fu">attr</span>(<span class="fu">scale</span>(<span class="fu">as.matrix</span>(returns[,<span class="fu">c</span>(<span class="st">"SP500_ret"</span>,<span class="st">"VIX_ret"</span>)])),</span>
-<span id="cb157-16"><a href="#cb157-16" aria-hidden="true" tabindex="-1"></a><span class="st">"scaled:center"</span>),</span>
-<span id="cb157-17"><a href="#cb157-17" aria-hidden="true" tabindex="-1"></a><span class="at">scale  =</span> <span class="fu">attr</span>(<span class="fu">scale</span>(<span class="fu">as.matrix</span>(returns[,<span class="fu">c</span>(<span class="st">"SP500_ret"</span>,<span class="st">"VIX_ret"</span>)])),</span>
-<span id="cb157-18"><a href="#cb157-18" aria-hidden="true" tabindex="-1"></a><span class="st">"scaled:scale"</span>)</span>
-<span id="cb157-19"><a href="#cb157-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb157-20"><a href="#cb157-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb157-21"><a href="#cb157-21" aria-hidden="true" tabindex="-1"></a>nas_ret_fc <span class="ot">&lt;-</span> <span class="fu">forecast</span>(best_nas, <span class="at">xreg =</span> Xfut_nasS, <span class="at">h =</span> H)</span>
-<span id="cb157-22"><a href="#cb157-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb157-23"><a href="#cb157-23" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(nas_ret_fc, <span class="at">main=</span><span class="st">"NASDAQ Return Forecast — chosen ARIMAX"</span>); <span class="fu">grid</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="multivariate-ts-models_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid figure-img" width="960"></p>
-</figure>
-</div>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb158"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb158-1"><a href="#cb158-1" aria-hidden="true" tabindex="-1"></a>last_nas <span class="ot">&lt;-</span> <span class="fu">tail</span>(price_data<span class="sc">$</span>NASDAQ,<span class="dv">1</span>)</span>
-<span id="cb158-2"><a href="#cb158-2" aria-hidden="true" tabindex="-1"></a>nas_level_path <span class="ot">&lt;-</span> last_nas <span class="sc">*</span> <span class="fu">exp</span>(<span class="fu">cumsum</span>(<span class="fu">as.numeric</span>(nas_ret_fc<span class="sc">$</span>mean)))</span>
-<span id="cb158-3"><a href="#cb158-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb158-4"><a href="#cb158-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(nas_level_path, <span class="at">type=</span><span class="st">"l"</span>,</span>
-<span id="cb158-5"><a href="#cb158-5" aria-hidden="true" tabindex="-1"></a><span class="at">xlab=</span><span class="st">"Forecast Step"</span>, <span class="at">ylab=</span><span class="st">"NASDAQ Level (approx.)"</span>,</span>
-<span id="cb158-6"><a href="#cb158-6" aria-hidden="true" tabindex="-1"></a><span class="at">main=</span><span class="st">"NASDAQ Level Path (from return forecasts)"</span>)</span>
-<span id="cb158-7"><a href="#cb158-7" aria-hidden="true" tabindex="-1"></a><span class="fu">grid</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="multivariate-ts-models_files/figure-html/unnamed-chunk-32-2.png" class="img-fluid figure-img" width="960"></p>
-</figure>
-</div>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb159"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb159-1"><a href="#cb159-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Last NASDAQ level: %.2f</span><span class="sc">\n</span><span class="st">"</span>, last_nas))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Last NASDAQ level: 22470.73</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb161"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb161-1"><a href="#cb161-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Forecasted NASDAQ level @%d: %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb161-2"><a href="#cb161-2" aria-hidden="true" tabindex="-1"></a>H, <span class="fu">tail</span>(nas_level_path,<span class="dv">1</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Forecasted NASDAQ level @30: 22936.82</code></pre>
-</div>
-</div>
-<p>Forecasts show small positive returns accumulating into a modest upward trend, taking levels from ~22,470 to ~22,937 after 30 steps.</p>
-</div>
-</div>
-</div>
-</section>
-<section id="multivariate-results-and-insights" class="level2">
-<h2 class="anchored" data-anchor-id="multivariate-results-and-insights">Multivariate Results and Insights</h2>
-<p>The multivariate analysis reveals a clear hierarchy of cross-market influence. Equities (S&amp;P 500, NASDAQ) are highly interconnected (ρ ≈ 0.95) and strongly driven by VIX, whose coefficients are consistently the largest and most significant. Rising volatility reliably predicts falling equity returns, and the ARIMAX models capture this relationship cleanly.</p>
-<p>VIX, in contrast, behaves almost entirely as an autoregressive process, showing minimal responsiveness to equities or Bitcoin, reinforcing its role as an independent risk barometer.</p>
-<p>Bitcoin remains largely isolated. Correlations are low, cross-effects are weak, and no traditional asset provides meaningful predictive power. Its movement is dominated by its own AR/MA dynamics rather than macro or equity variables.</p>
-<p>USD shows essentially no interaction with the system: coefficients are near zero, correlations are tiny, and ARIMAX models confirm it behaves as an independent, noise-like process at the daily level.</p>
-<p>Overall, the multivariate system shows that VIX anchors equity behavior, equities move together, while Bitcoin and USD operate mostly outside this network, offering diversification but limited short-run predictability.</p>
+<p>Cross-asset predictability is weak across all models. SPX is strongly driven by VIX (fear), but Bitcoin has only tiny, insignificant dependencies on SPX or VIX, and USD is essentially unaffected by any other asset. Overall, the equity–volatility relationship dominates, while Bitcoin and USD remain mostly independent.</p>
 
 
+</div>
+</div>
+</div>
 </section>
 
 </main> <!-- /main -->
