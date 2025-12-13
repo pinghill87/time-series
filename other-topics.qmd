@@ -2,7 +2,7 @@
 title: "Other: Interrupted TS/ARFIMA/Spectral Analysis"
 code-fold: true
 ---
-
+## Data Loading
 ```{r}
 #| warning: false
 #| message: false
@@ -33,8 +33,6 @@ btc_returns <- btc_df |>
 
 ```
 
-Bitcoin returns remain very noisy with frequent spikes both up and down. The plot shows a cluster of heavier negative returns around late 2022, but outside of that, the series behaves in its typical volatile fashion.
-
 ```{r}
 #| warning: false
 #| message: false
@@ -52,6 +50,8 @@ its_df <- btc_returns |>
 
 ```
 
+## Bitcoin Daily Log Returns with FTX Collapse
+
 ```{r}
 #| warning: false
 #| message: false
@@ -65,7 +65,7 @@ ggplot(its_df, aes(Date, Bitcoin_ret)) +
   theme_minimal()
 
 ```
-## Interpretation of the Trend Plot
+### Interpretation of the Trend Plot
 
 The pre- and post-FTX trend lines are nearly flat and almost identical. This visually confirms what the regression results showed:
 
@@ -75,7 +75,7 @@ The pre- and post-FTX trend lines are nearly flat and almost identical. This vis
 
 Overall, Bitcoin simply returns to its usual noisy, mean-reverting behavior after the event.
 
-
+## Interrupted Time Series Model of Bitcoin Returns
 ```{r}
 #| warning: false
 #| message: false
@@ -108,6 +108,7 @@ The “time_after_intervention” slope is very small and not significant (p = 0
 **Conclusion:**  
 There is no statistical evidence that the FTX collapse created a persistent shift in Bitcoin’s return levels or trend. Short-term volatility was visible around the event, but there is no long-term structural break in the daily returns.
 
+## Interrupted Time Series of Bitcoin Returns Around the FTX Collapse
 
 ```{r}
 #| warning: false
@@ -133,6 +134,8 @@ ggplot(its_df, aes(Date, Bitcoin_ret)) +
 
 ```
 
+## Distribution of Daily Bitcoin Returns Before vs. After the FTX Collapse
+
 ```{r}
 #| warning: false
 #| message: false
@@ -149,18 +152,9 @@ ggplot(its_df, aes(x = factor(intervention, labels=c("Before","After")),
 
 ```
 
-The distribution of returns before and after FTX looks nearly the same:
+The return distributions before and after the FTX collapse are nearly identical. Medians and overall spread remain the same, with extreme outliers present in both periods. Although large negative returns are slightly less frequent after the event, the difference is minor. This aligns with the regression results, showing no meaningful change in average returns or risk.
 
-Medians are almost identical
-
-The spread is similar
-
-Extreme outliers exist in both periods
-
-Slightly fewer huge negative outliers after the collapse
-
-This matches the regression:
-the event did not shift the average return or the variance in a meaningful way.
+## Diagnostic Plots for Interrupted Time Series Regression of Bitcoin Return
 
 ```{r}
 #| warning: false

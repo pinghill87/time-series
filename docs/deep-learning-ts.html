@@ -354,7 +354,7 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"RNN RMSE:"</span>, <span class="fu">round</span>(rmse_rnn, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>RNN RMSE: 0.722194 </code></pre>
+<pre><code>RNN RMSE: 0.726775 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -412,7 +412,7 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GRU RMSE:"</span>, <span class="fu">round</span>(rmse_gru, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>GRU RMSE: 0.719842 </code></pre>
+<pre><code>GRU RMSE: 0.719543 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -470,7 +470,7 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 <span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"LSTM RMSE:"</span>, <span class="fu">round</span>(rmse_lstm, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>LSTM RMSE: 0.719561 </code></pre>
+<pre><code>LSTM RMSE: 0.720437 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -557,16 +557,16 @@ First 80% used for training, last 20% for validation to evaluate out-of-sample p
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">LSTM</td>
-<td style="text-align: right;">0.719561</td>
+<td style="text-align: left;">GRU</td>
+<td style="text-align: right;">0.719543</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">GRU</td>
-<td style="text-align: right;">0.719842</td>
+<td style="text-align: left;">LSTM</td>
+<td style="text-align: right;">0.720437</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">RNN</td>
-<td style="text-align: right;">0.722194</td>
+<td style="text-align: right;">0.726775</td>
 </tr>
 </tbody>
 </table>
@@ -714,7 +714,7 @@ Data is split chronologically so the model is always tested on future observatio
 <span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Multivariate RNN RMSE:"</span>, <span class="fu">round</span>(rmse_rnn_m, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Multivariate RNN RMSE: 0.740713 </code></pre>
+<pre><code>Multivariate RNN RMSE: 0.72639 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -780,7 +780,7 @@ Data is split chronologically so the model is always tested on future observatio
 <span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Multivariate GRU RMSE:"</span>, <span class="fu">round</span>(rmse_gru_m, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Multivariate GRU RMSE: 0.722444 </code></pre>
+<pre><code>Multivariate GRU RMSE: 0.737356 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -846,7 +846,7 @@ Data is split chronologically so the model is always tested on future observatio
 <span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Multivariate LSTM RMSE:"</span>, <span class="fu">round</span>(rmse_lstm_m, <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Multivariate LSTM RMSE: 0.714902 </code></pre>
+<pre><code>Multivariate LSTM RMSE: 0.714416 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -900,15 +900,15 @@ Data is split chronologically so the model is always tested on future observatio
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">LSTM (Multivariate)</td>
-<td style="text-align: right;">0.714902</td>
+<td style="text-align: right;">0.714416</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">GRU (Multivariate)</td>
-<td style="text-align: right;">0.722444</td>
+<td style="text-align: left;">RNN (Multivariate)</td>
+<td style="text-align: right;">0.726390</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">RNN (Multivariate)</td>
-<td style="text-align: right;">0.740713</td>
+<td style="text-align: left;">GRU (Multivariate)</td>
+<td style="text-align: right;">0.737356</td>
 </tr>
 </tbody>
 </table>

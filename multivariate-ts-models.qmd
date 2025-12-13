@@ -1136,3 +1136,4 @@ Bitcoin remains largely isolated. Correlations are low, cross-effects are weak, 
 USD shows essentially no interaction with the system: coefficients are near zero, correlations are tiny, and ARIMAX models confirm it behaves as an independent, noise-like process at the daily level.
 
 Overall, the multivariate system shows that VIX anchors equity behavior, equities move together, while Bitcoin and USD operate mostly outside this network, offering diversification but limited short-run predictability.
+
