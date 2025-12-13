@@ -203,6 +203,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<section id="data-loading" class="level2">
+<h2 class="anchored" data-anchor-id="data-loading">Data Loading</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -231,7 +233,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<p>Bitcoin returns remain very noisy with frequent spikes both up and down. The plot shows a cluster of heavier negative returns around late 2022, but outside of that, the series behaves in its typical volatile fashion.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -247,6 +248,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
+</section>
+<section id="bitcoin-daily-log-returns-with-ftx-collapse" class="level2">
+<h2 class="anchored" data-anchor-id="bitcoin-daily-log-returns-with-ftx-collapse">Bitcoin Daily Log Returns with FTX Collapse</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -266,8 +270,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<section id="interpretation-of-the-trend-plot" class="level2">
-<h2 class="anchored" data-anchor-id="interpretation-of-the-trend-plot">Interpretation of the Trend Plot</h2>
+<section id="interpretation-of-the-trend-plot" class="level3">
+<h3 class="anchored" data-anchor-id="interpretation-of-the-trend-plot">Interpretation of the Trend Plot</h3>
 <p>The pre- and post-FTX trend lines are nearly flat and almost identical. This visually confirms what the regression results showed:</p>
 <ul>
 <li>no major uptick in average returns</li>
@@ -275,6 +279,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>no visible new trend emerging after the collapse</li>
 </ul>
 <p>Overall, Bitcoin simply returns to its usual noisy, mean-reverting behavior after the event.</p>
+</section>
+</section>
+<section id="interrupted-time-series-model-of-bitcoin-returns" class="level2">
+<h2 class="anchored" data-anchor-id="interrupted-time-series-model-of-bitcoin-returns">Interrupted Time Series Model of Bitcoin Returns</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -318,6 +326,9 @@ F-statistic: 1.143 on 3 and 2447 DF,  p-value: 0.3302</code></pre>
 <p>Post-event trend change: The “time_after_intervention” slope is very small and not significant (p = 0.37). → The slope of returns after the event did not materially change.</p>
 <p><strong>Conclusion:</strong><br>
 There is no statistical evidence that the FTX collapse created a persistent shift in Bitcoin’s return levels or trend. Short-term volatility was visible around the event, but there is no long-term structural break in the daily returns.</p>
+</section>
+<section id="interrupted-time-series-of-bitcoin-returns-around-the-ftx-collapse" class="level2">
+<h2 class="anchored" data-anchor-id="interrupted-time-series-of-bitcoin-returns-around-the-ftx-collapse">Interrupted Time Series of Bitcoin Returns Around the FTX Collapse</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -345,6 +356,9 @@ There is no statistical evidence that the FTX collapse created a persistent shif
 </div>
 </div>
 </div>
+</section>
+<section id="distribution-of-daily-bitcoin-returns-before-vs.-after-the-ftx-collapse" class="level2">
+<h2 class="anchored" data-anchor-id="distribution-of-daily-bitcoin-returns-before-vs.-after-the-ftx-collapse">Distribution of Daily Bitcoin Returns Before vs.&nbsp;After the FTX Collapse</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -369,6 +383,9 @@ There is no statistical evidence that the FTX collapse created a persistent shif
 <p>Extreme outliers exist in both periods</p>
 <p>Slightly fewer huge negative outliers after the collapse</p>
 <p>This matches the regression: the event did not shift the average return or the variance in a meaningful way.</p>
+</section>
+<section id="diagnostic-plots-for-interrupted-time-series-regression-of-bitcoin-return" class="level2">
+<h2 class="anchored" data-anchor-id="diagnostic-plots-for-interrupted-time-series-regression-of-bitcoin-return">Diagnostic Plots for Interrupted Time Series Regression of Bitcoin Return</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
