@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://YOUR_GH_USERNAME.github.io/time-series/introduction.html</loc>
-    <lastmod>2025-12-13T03:21:36.282Z</lastmod>
-  </url>
-  <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/other-topics.html</loc>
     <lastmod>2025-12-13T03:01:45.046Z</lastmod>
   </url>
   <url>
-    <loc>https://YOUR_GH_USERNAME.github.io/time-series/conclusions.html</loc>
-    <lastmod>2025-12-13T03:09:32.634Z</lastmod>
+    <loc>https://YOUR_GH_USERNAME.github.io/time-series/introduction.html</loc>
+    <lastmod>2025-12-13T03:21:36.282Z</lastmod>
   </url>
   <url>
-    <loc>https://YOUR_GH_USERNAME.github.io/time-series/about.html</loc>
-    <lastmod>2025-12-13T01:28:13.902Z</lastmod>
+    <loc>https://YOUR_GH_USERNAME.github.io/time-series/financial-ts-models.html</loc>
+    <lastmod>2025-12-13T01:53:08.385Z</lastmod>
+  </url>
+  <url>
+    <loc>https://YOUR_GH_USERNAME.github.io/time-series/index.html</loc>
+    <lastmod>2025-12-13T02:10:10.176Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/deep-learning-ts.html</loc>
@@ -37,8 +37,12 @@
     <lastmod>2025-12-12T19:57:56.984Z</lastmod>
   </url>
   <url>
-    <loc>https://YOUR_GH_USERNAME.github.io/time-series/financial-ts-models.html</loc>
-    <lastmod>2025-12-13T01:53:08.385Z</lastmod>
+    <loc>https://YOUR_GH_USERNAME.github.io/time-series/about.html</loc>
+    <lastmod>2025-12-13T01:28:13.902Z</lastmod>
+  </url>
+  <url>
+    <loc>https://YOUR_GH_USERNAME.github.io/time-series/conclusions.html</loc>
+    <lastmod>2025-12-13T03:09:32.634Z</lastmod>
   </url>
   <url>
     <loc>https://YOUR_GH_USERNAME.github.io/time-series/data-visualization.html</loc>
