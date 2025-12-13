@@ -108,7 +108,7 @@ This project satisfies the course's data requirements by incorporating:
 
 # The Big Picture
 
-![Volatility Spillovers Framework](bigpicture.png)
+![Volatility Spillovers Framework](Images/bigpicture.png)
 
 # Literature Review: Volatility Spillovers Across Asset Classes
 
