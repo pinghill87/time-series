@@ -19,6 +19,8 @@ The **VIX** (CBOE Volatility Index), often called the "fear gauge," measures exp
 
 The **U.S. Dollar Index (USD)** summarizes the value of the U.S. dollar against a basket of major currencies. Dollar strength is linked to global risk sentiment and capital flows. A stronger dollar is often associated with tighter global financial conditions and may put pressure on risky assets such as equities and cryptocurrencies.
 
+The **NASDAQ Composite Index** serves as a growth-oriented measure of U.S. equity performance, with a heavy weighting toward technology firms. Prior work (e.g., Corbet et al. 2020) suggests that cryptocurrency markets often co-move more strongly with technology-driven equity indices than with broad-market indices such as the S&P 500. The NASDAQ therefore provides an additional lens for examining equity–crypto linkages, particularly during periods of rapid innovation or heightened risk appetite.
+
 **Variable Justification**:
 
 Based on this literature, I focus on the following relationships:
@@ -60,12 +62,19 @@ Based on the literature and data availability, I estimate the following models:
 **Model 5 (VAR)**: [Bitcoin_ret, SP500_ret, VIX_ret]  
 - *Rationale*: Capture bidirectional relationships and dynamic interactions among cryptocurrency, equities, and volatility.
 
-**For this homework, I focus primarily on the ARIMAX models (Models 1–4) and a VAR model including Bitcoin, SP500, and VIX.**
+**Model 6 (ARIMAX)**: NASDAQ_ret ~ SP500_ret + VIX_ret
+- *Rationale*: Assess whether NASDAQ movements are primarily driven by broad equity conditions and market volatility, and whether NASDAQ behaves similarly or differently from the S&P 500 when exposed to market stress.
+
 
 ---
 
+## Data Preparation
+
+::: {.panel-tabset}
+
+### Data Loading
+
 ```{r}
-#| label: btc-libs
 #| warning: false
 #| message: false
 suppressPackageStartupMessages({
@@ -76,7 +85,6 @@ library(ggplot2)
 ```
 
 ```{r}
-#| label: btc-setup
 #| warning: false
 #| message: false
 
@@ -85,7 +93,7 @@ library(ggplot2)
 start_date <- as.Date("2019-01-01")
 end_date   <- as.Date("2025-09-18")
 
-# helper (safe) loader
+
 
 load_fred_data <- function(symbol, start, end) {
 tryCatch({
@@ -96,7 +104,7 @@ NULL
 })
 }
 
-# Load and merge only if needed
+# Load and merge 
 
 if (!exists("price_data") ||
 !all(c("Date","SP500","VIX","Bitcoin","USD") %in% names(price_data))) {
@@ -104,34 +112,50 @@ if (!exists("price_data") ||
 sp500_data <- load_fred_data("SP500",    start_date, end_date)
 vix_data   <- load_fred_data("VIXCLS",   start_date, end_date)
 btc_data   <- load_fred_data("CBBTCUSD", start_date, end_date)
-usd_data   <- load_fred_data("DTWEXBGS", start_date, end_date)  # NEW: USD
+usd_data   <- load_fred_data("DTWEXBGS", start_date, end_date)
+nasdaq_data <- load_fred_data("NASDAQCOM", start_date, end_date)  
 
 merged <- merge(
 SP500   = sp500_data,
 VIX     = vix_data,
 Bitcoin = btc_data,
-USD     = usd_data
+USD     = usd_data,
+NASDAQ  = nasdaq_data
 )
 
 price_data <- fortify.zoo(merged)
-colnames(price_data) <- c("Date","SP500","VIX","Bitcoin","USD")
+colnames(price_data) <- c("Date","SP500","VIX","Bitcoin","USD", "NASDAQ")
 price_data <- price_data |> arrange(Date) |> na.omit()
 }
 
-# Daily log-returns (stationary)
+# Daily log-returns 
 
 returns <- price_data |>
 mutate(
 SP500_ret   = c(NA, diff(log(SP500))),
 VIX_ret     = c(NA, diff(log(VIX))),
 Bitcoin_ret = c(NA, diff(log(Bitcoin))),
-USD_ret     = c(NA, diff(log(USD)))  # NEW: USD returns
+USD_ret     = c(NA, diff(log(USD))),
+ NASDAQ_ret  = c(NA, diff(log(NASDAQ)))  
 ) |>
 na.omit()
+
+cat(
+  sprintf(
+    "Data loaded — SP500: %d | VIX: %d | BTC: %d | USD: %d | NASDAQ: %d\n",
+    nrow(sp500_data),
+    nrow(vix_data),
+    nrow(btc_data),
+    nrow(usd_data),
+    nrow(nasdaq_data)
+  )
+)
 
 
 
 ```
+
+:::
 
 ## Bitcoin
 
@@ -144,6 +168,7 @@ na.omit()
 #| warning: false
 #| fig.width: 10
 #| fig.height: 5
+#| 
 p1 <- ggplot(price_data, aes(Date, Bitcoin)) +
 geom_line() + theme_minimal() + labs(title="Bitcoin (Level)", x=NULL, y=NULL)
 p2 <- ggplot(returns, aes(Date, Bitcoin_ret)) +
@@ -155,10 +180,8 @@ gridExtra::grid.arrange(p1, p2, nrow=2)
 ### Variable Selection
 
 ```{r}
-#| label: btc-varsel
 #| warning: false
 
-# Quick sanity checks for using SP500_ret & VIX_ret as xreg
 
 cm <- cor(returns[, c("Bitcoin_ret","SP500_ret","VIX_ret")], use="complete.obs")
 print(round(cm, 3))
@@ -173,24 +196,25 @@ adf_btc$p.value, adf_spx$p.value, adf_vix$p.value))
 
 ```
 
+Bitcoin returns were modeled using SP500 and VIX as predictors. BTC is modestly correlated with SPX (0.28) and weakly negatively correlated with VIX (–0.22). All series are stationary (ADF p = 0.01), so they are appropriate exogenous regressors.
+
 ### Initial Selection
 
 ```{r}
-#| label: btc-initial
 #| warning: false
 
 # Assemble y and scaled xreg
 
 y   <- as.numeric(returns$Bitcoin_ret)
 X   <- as.matrix(returns[, c("SP500_ret","VIX_ret")])
-XS  <- scale(X)  # keep attributes for future scaling
+XS  <- scale(X)  
 
-# Method 1 — Auto.ARIMA with xreg
+# Auto.ARIMA 
 
 m_btc_auto <- forecast::auto.arima(y, xreg = XS, seasonal = FALSE)
 cat("AUTO.ARIMA with xreg summary:\n"); print(summary(m_btc_auto))
 
-# Method 2 — Manual: OLS then ARIMA on residuals, finally ARIMAX with that order
+# Manual: OLS then ARIMA on residual
 
 ols <- lm(y ~ XS)
 res <- resid(ols)
@@ -201,16 +225,19 @@ cat("\nMANUAL ARIMAX summary:\n"); print(summary(m_btc_manual))
 
 ```
 
+Both AUTO.ARIMA and manual testing selected the same structure:
+ARIMAX(0,0,1) with SP500_ret and VIX_ret as predictors.
+SP500_ret has a small positive effect on BTC returns, while VIX_ret has a very small negative effect.
+
 ### Cross Validation
 
 ```{r}
-#| label: btc-cv
 #| warning: false
 #| fig.width: 10
 #| fig.height: 4
 
-H <- 20           # horizon
-K <- 10           # folds
+H <- 20           
+K <- 10          
 n <- length(y)
 rmse_auto <- c(); rmse_manual <- c()
 
@@ -231,7 +258,7 @@ fc_a <- forecast(fit_a, xreg = X_te, h = H)
 rmse_auto <- c(rmse_auto, sqrt(mean((y_te - as.numeric(fc_a$mean))^2)))
 }
 
-# manual (use the order we found above)
+# manual 
 
 fit_m <- try(Arima(y_tr, order = ord, xreg = X_tr, include.mean = TRUE), silent=TRUE)
 if (!inherits(fit_m, "try-error")) {
@@ -257,10 +284,12 @@ best_is_auto <- mean(rmse_auto, na.rm=TRUE) <= mean(rmse_manual, na.rm=TRUE)
 cat(sprintf("Chosen by CV: %s\n", ifelse(best_is_auto, "AUTO.ARIMA", "MANUAL ARIMAX")))
 
 ```
+
+Rolling CV showed identical RMSE for Auto and Manual (0.02625), indicating the model is stable and no more complex structure is needed. AUTO.ARIMA was selected.
+
 ### Model Creation
 
 ```{r}
-#| label: btc-model
 #| warning: false
 
 best_model <- if (best_is_auto) m_btc_auto else m_btc_manual
@@ -276,7 +305,7 @@ par(mfrow=c(1,1))
 lb <- Box.test(resid_b, lag = 20, type = "Ljung-Box")
 cat(sprintf("Ljung-Box p (lag=20): %.4f\n", lb$p.value))
 
-# Equation print (regression part only)
+# Equation print 
 
 co <- coef(best_model)
 b_spx <- co[grep("SP500_ret", names(co))]
@@ -288,6 +317,10 @@ ifelse(length(b_vix)==0, 0, b_vix)))
 
 ```
 
+Final ARIMAX model:
+BTC_ret = 0.0106·SP500_ret – 0.0014·VIX_ret + MA(1) errors
+Residuals pass diagnostics (Ljung–Box p = 0.27), confirming the model sufficiently captures all structure in the data.
+
 ### Forecasting
 
 ```{r}
@@ -298,13 +331,13 @@ ifelse(length(b_vix)==0, 0, b_vix)))
 
 H <- 30
 
-# Forecast exogenous returns first
+
 
 spx_fc <- forecast::forecast(auto.arima(returns$SP500_ret), h = H)$mean
 vix_fc <- forecast::forecast(auto.arima(returns$VIX_ret),   h = H)$mean
 Xfut   <- cbind(SP500_ret = as.numeric(spx_fc), VIX_ret = as.numeric(vix_fc))
 
-# scale with training attributes from XS
+# scale 
 
 XfutS <- scale(Xfut,
 center = attr(scale(as.matrix(returns[,c("SP500_ret","VIX_ret")])), "scaled:center"),
@@ -314,12 +347,11 @@ btc_ret_fc <- forecast(best_model, xreg = XfutS, h = H)
 
 plot(btc_ret_fc, main="BTC Return Forecast — chosen ARIMAX"); grid()
 
-# Convert return forecast to a *price level* path (for intuition)
 
 last_lvl <- tail(price_data$Bitcoin, 1)
 lvl_path <- last_lvl * exp(cumsum(as.numeric(btc_ret_fc$mean)))
 
-# quick level-path plot
+# level-path plot
 
 op <- par(mar=c(4,4,3,1))
 plot(lvl_path, type="l", xlab="Forecast Step", ylab="BTC Level (approx.)",
@@ -331,6 +363,8 @@ cat(sprintf("Last observed BTC level: %.2f\n", last_lvl))
 cat(sprintf("Forecasted BTC level at step %d: %.2f\n", H, tail(lvl_path,1)))
 
 ```
+
+Return forecasts center near zero, as expected for financial returns. Converting returns to levels results in a gradual upward projected BTC path (≈122,880 at 30 steps), driven by small positive expected returns rather than strong predictive power.
 
 :::
 
@@ -365,6 +399,8 @@ adf_spx$p.value, adf_btc$p.value, adf_vix$p.value))
 
 ```
 
+SPX returns show positive correlation with Bitcoin (0.28) and strong negative correlation with VIX (–0.73). All three return series are stationary (ADF p = 0.01), making BTC and VIX appropriate exogenous predictors.
+
 ### Initial Selection
 ```{r}
 #| warning: false
@@ -383,6 +419,10 @@ m_spx_manual <- Arima(y2, order = ord2, xreg = X2S, include.mean = TRUE)
 cat("\nMANUAL ARIMAX (SPX) summary:\n"); print(summary(m_spx_manual))
 
 ```
+
+AUTO.ARIMA and manual testing both select the same structure:
+ARIMAX(2,0,2) with BTC_ret and VIX_ret as regressors.
+BTC_ret has a tiny positive effect, while VIX_ret has a stronger negative effect on SPX returns.
 
 ### Cross Validation
 
@@ -422,6 +462,8 @@ cat(sprintf("Chosen by CV: %s\n", ifelse(best_spx_is_auto,"AUTO.ARIMA","MANUAL A
 
 ```
 
+Rolling CV produced the same RMSE for Auto and Manual (0.00574), confirming the model is stable and AUTO.ARIMA is preferred.
+
 ### Model Creation
 ```{r}
 #| warning: false
@@ -446,6 +488,10 @@ ifelse(length(b_vix)==0,0,b_vix)))
 
 ```
 
+Final SPX ARIMAX model:
+SPX_ret = 0.0014·BTC_ret – 0.0087·VIX_ret + ARMA(2,2) errors
+Residuals show slight autocorrelation (Ljung–Box p = 0.0001), but still acceptable for forecasting given the near-white-noise nature of returns.
+
 ### Forecasting
 ```{r}
 #| warning: false
@@ -453,7 +499,7 @@ ifelse(length(b_vix)==0,0,b_vix)))
 #| fig.height: 5
 H <- 30
 
-# Forecast exogenous BTC & VIX returns
+# Forecast BTC & VIX returns
 
 btc_fc2 <- forecast::forecast(auto.arima(returns$Bitcoin_ret), h = H)$mean
 vix_fc2 <- forecast::forecast(auto.arima(returns$VIX_ret),     h = H)$mean
@@ -475,6 +521,8 @@ last_spx, H, tail(spx_level_path,1)))
 
 ```
 
+Return forecasts remain centered near zero, and the level projection shows mild upward drift (≈6694 at step 30), reflecting cumulative small positive expected returns rather than strong predictive signals.
+
 :::
 
 ## VIX
@@ -495,6 +543,8 @@ gridExtra::grid.arrange(p1, p2, nrow=2)
 
 ```
 
+
+
 ### Variable Selection
 ```{r}
 #| warning: false
@@ -507,6 +557,11 @@ cat(sprintf("ADF p-values → VIX: %.4f | BTC: %.4f | SPX: %.4f\n",
 adf_vix$p.value, adf_btc$p.value, adf_spx$p.value))
 
 ```
+
+VIX is strongly negatively correlated with SP500 (–0.73) and mildly with BTC (–0.22).
+Both included.
+
+
 
 ### Initial selection
 ```{r}
@@ -526,6 +581,9 @@ m_vix_manual <- Arima(y3, order = ord3, xreg = X3S, include.mean = TRUE)
 cat("\nMANUAL ARIMAX (VIX) summary:\n"); print(summary(m_vix_manual))
 
 ```
+
+Series stationary (ADF p = 0.01).
+AUTO.ARIMA selected ARIMA(3,0,4) errors.
 
 ### Cross Validation
 ```{r}
@@ -564,6 +622,8 @@ cat(sprintf("Chosen by CV: %s\n", ifelse(best_vix_is_auto,"AUTO.ARIMA","MANUAL A
 
 ```
 
+Manual model slightly better (RMSE: 0.04936, vs Auto 0.04964) → Manual ARIMAX selected.
+
 
 ### Model Creation
 ```{r}
@@ -589,6 +649,9 @@ ifelse(length(b_spx3)==0,0,b_spx3)))
 
 ```
 
+VIX_ret = –0.0004·BTC_ret – 0.0587·SPX_ret + ARMA(3,4) errors.
+SP500 has a sizable negative effect: when markets rise, VIX falls. BTC’s effect is negligible.
+
 ### Forecasting
 ```{r}
 #| warning: false
@@ -596,7 +659,7 @@ ifelse(length(b_spx3)==0,0,b_spx3)))
 #| fig.height: 5
 H <- 30
 
-# Forecast exogenous BTC & SPX returns
+# Forecast  BTC & SPX returns
 
 btc_fc3 <- forecast::forecast(auto.arima(returns$Bitcoin_ret), h = H)$mean
 spx_fc3 <- forecast::forecast(auto.arima(returns$SP500_ret),  h = H)$mean
@@ -618,6 +681,8 @@ last_vix, H, tail(vix_level_path,1)))
 
 ```
 
+VIX level path drifts gradually downward: ~15.70 → 15.02 over 30 days.
+
 :::
 
 ## USD
@@ -627,6 +692,7 @@ last_vix, H, tail(vix_level_path,1)))
 ### Visualization
 
 ```{r}
+#| warning: false
 p1 <- ggplot(price_data, aes(Date, USD)) +
   geom_line() + theme_minimal() +
   labs(title="USD (Level)", x=NULL, y=NULL)
@@ -640,6 +706,7 @@ gridExtra::grid.arrange(p1, p2, nrow=2)
 
 ### Variable Selection
 ```{r}
+#| warning: false
 cm_usd <- cor(
 returns[, c("USD_ret","SP500_ret","VIX_ret","Bitcoin_ret")],
 use="complete.obs"
@@ -650,10 +717,12 @@ adf_usd <- tseries::adf.test(returns$USD_ret)
 cat(sprintf("ADF p-value → USD_ret: %.4f\n", adf_usd$p.value))
 ```
 
+USD has only weak relationships with other assets: mild negative correlation with SPX (–0.31), mild positive with VIX (+0.22), and small negative with BTC (–0.17). No strong cross-asset linkages.
+
 ### Initial Selection
 
 ```{r}
-# We model USD_ret using Bitcoin_ret + SP500_ret (same structure as VIX or SP500)
+#| warning: false
 
 y_usd <- as.numeric(returns$USD_ret)
 X_usd <- as.matrix(returns[, c("Bitcoin_ret","SP500_ret")])
@@ -679,9 +748,13 @@ print(summary(m_usd_manual))
 
 ```
 
+AUTO.ARIMA selects a very simple ARIMAX(0,0,0) — effectively white noise with small regressors.
+Manual exploration finds a slightly richer ARIMA(3,0,1), but both detect tiny, insignificant coefficients, reinforcing that USD is largely unpredictable.
+
 ### Cross Validation
 
 ```{r}
+#| warning: false
 H <- 20; K <- 10
 n_usd <- length(y_usd)
 rmse_auto_usd <- c(); rmse_manual_usd <- c()
@@ -733,10 +806,13 @@ mean(rmse_manual_usd, na.rm=TRUE)
 cat(sprintf("Chosen by CV: %s\n",
 ifelse(best_usd_is_auto,"AUTO.ARIMA","MANUAL ARIMAX")))
 ```
+Rolling CV shows Auto and Manual models perform almost identically (RMSE ≈ 0.00328).
+AUTO.ARIMA chosen, since added AR/MA structure brings no benefit.
 
 ### Model Creation
 
 ```{r}
+#| warning: false
 best_usd <- if (best_usd_is_auto) m_usd_auto else m_usd_manual
 cat("Final USD model summary:\n"); print(summary(best_usd))
 
@@ -764,6 +840,7 @@ ifelse(length(b_spx_usd)==0,0,b_spx_usd)
 
 ### Forecasting
 ```{r}
+#| warning: false
 H <- 30
 
 # Forecast BTC & SPX returns as xreg
@@ -799,4 +876,263 @@ H, tail(usd_level_path,1)))
 
 ```
 
-Cross-asset predictability is weak across all models. SPX is strongly driven by VIX (fear), but Bitcoin has only tiny, insignificant dependencies on SPX or VIX, and USD is essentially unaffected by any other asset. Overall, the equity–volatility relationship dominates, while Bitcoin and USD remain mostly independent.
+Final model:
+USD_ret = –0.0003·BTC_ret – 0.0009·SPX_ret + white-noise errors.
+Residuals pass all diagnostics, confirming near-pure randomness.
+Forecasted returns hover around zero, and the level path remains flat (~120.10), indicating no momentum and no cross-asset predictability.
+
+:::
+
+## NASDAQ
+
+::: {.panel-tabset}
+
+### Visualization
+
+```{r}
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+p1 <- ggplot(price_data, aes(Date, NASDAQ)) +
+geom_line() + theme_minimal() +
+labs(title="NASDAQ (Level)", x=NULL, y=NULL)
+
+p2 <- ggplot(returns, aes(Date, NASDAQ_ret)) +
+geom_line() + theme_minimal() +
+labs(title="NASDAQ (Log-Returns)", x=NULL, y=NULL)
+
+gridExtra::grid.arrange(p1, p2, nrow=2)
+
+```
+
+
+### Variable Selection
+```{r}
+#| warning: false
+
+# Check correlations
+
+cm_nas <- cor(returns[, c("NASDAQ_ret","SP500_ret","VIX_ret","Bitcoin_ret")],
+use="complete.obs")
+print(round(cm_nas, 3))
+
+# Stationarity tests
+
+adf_nas <- adf.test(returns$NASDAQ_ret)
+adf_spx <- adf.test(returns$SP500_ret)
+adf_vix <- adf.test(returns$VIX_ret)
+
+cat(sprintf("ADF p-values → NASDAQ: %.4f | SPX: %.4f | VIX: %.4f\n",
+adf_nas$p.value, adf_spx$p.value, adf_vix$p.value))
+
+```
+
+NASDAQ is linked to SP500 (ρ = 0.95) and strongly negatively correlated with VIX (fear) at –0.72. Bitcoin has only a mild positive relationship. All series are stationary in returns (ADF p = 0.01), so SP500_ret and VIX_ret are included as meaningful predictors.
+
+
+### Initial Selection
+
+```{r}
+#| warning: false
+
+# Target: NASDAQ returns
+
+y_nas <- as.numeric(returns$NASDAQ_ret)
+
+# Exogenous regressors: SP500 + VIX 
+
+X_nas <- as.matrix(returns[, c("SP500_ret","VIX_ret")])
+X_nasS <- scale(X_nas)
+
+# AUTO.ARIMA 
+
+m_nas_auto <- forecast::auto.arima(y_nas, xreg = X_nasS, seasonal = FALSE)
+cat("AUTO.ARIMA (NASDAQ) summary:\n"); print(summary(m_nas_auto))
+
+# Manual ARIMAX
+
+ols_nas <- lm(y_nas ~ X_nasS)
+res_nas <- resid(ols_nas)
+res_nas_arima <- forecast::auto.arima(res_nas, seasonal = FALSE)
+ord_nas <- arimaorder(res_nas_arima)
+
+m_nas_manual <- Arima(y_nas, order = ord_nas,
+xreg = X_nasS, include.mean = TRUE)
+
+cat("\nMANUAL ARIMAX (NASDAQ) summary:\n")
+print(summary(m_nas_manual))
+
+
+```
+
+AUTO.ARIMA chooses ARIMAX(2,0,2), capturing strong autocorrelation from equity momentum. Coefficients show NASDAQ rises with SPX (≈ 0.0141) and falls when VIX increases (≈ –0.0008), matching market intuition. Manual selection explored simpler structures, but AUTO clearly fit better.
+
+### Cross Validation
+
+```{r}
+#| warning: false
+#| fig.width: 10
+#| fig.height: 4
+
+H <- 20
+K <- 10
+n_nas <- length(y_nas)
+
+rmse_auto_nas <- c()
+rmse_manual_nas <- c()
+
+for (i in 1:K) {
+tr_end <- n_nas - H*(K - i + 1)
+if (tr_end < 250) break
+
+y_tr <- y_nas[1:tr_end]
+y_te <- y_nas[(tr_end+1):(tr_end+H)]
+
+X_tr <- X_nasS[1:tr_end, , drop=FALSE]
+X_te <- X_nasS[(tr_end+1):(tr_end+H), , drop=FALSE]
+
+# AUTO.ARIMA
+
+fit_a <- try(auto.arima(y_tr, xreg = X_tr, seasonal = FALSE), silent=TRUE)
+if (!inherits(fit_a, "try-error")) {
+fc <- forecast(fit_a, xreg = X_te, h = H)
+rmse_auto_nas <- c(rmse_auto_nas,
+sqrt(mean((y_te - as.numeric(fc$mean))^2)))
+}
+
+# MANUAL ARIMAX
+
+fit_m <- try(Arima(y_tr, order=ord_nas, xreg=X_tr, include.mean=TRUE),
+silent=TRUE)
+if (!inherits(fit_m, "try-error")) {
+fc <- forecast(fit_m, xreg = X_te, h = H)
+rmse_manual_nas <- c(rmse_manual_nas,
+sqrt(mean((y_te - as.numeric(fc$mean))^2)))
+}
+}
+
+cv_nas <- tibble(
+Fold  = 1:max(length(rmse_auto_nas), length(rmse_manual_nas)),
+Auto  = rmse_auto_nas,
+Manual= rmse_manual_nas
+) |> pivot_longer(-Fold, names_to="Model", values_to="RMSE")
+
+ggplot(na.omit(cv_nas), aes(Fold, RMSE, color=Model)) +
+geom_line() + geom_point(size=2) +
+theme_minimal() +
+labs(title="NASDAQ ARIMAX — Rolling CV RMSE",
+x="Fold", y="RMSE")
+
+cat(sprintf("Mean RMSE → Auto: %.5f | Manual: %.5f\n",
+mean(rmse_auto_nas,   na.rm=TRUE),
+mean(rmse_manual_nas, na.rm=TRUE)))
+
+best_nas_is_auto <- mean(rmse_auto_nas, na.rm=TRUE) <=
+mean(rmse_manual_nas, na.rm=TRUE)
+
+cat(sprintf("Chosen by CV: %s\n",
+ifelse(best_nas_is_auto, "AUTO.ARIMA", "MANUAL ARIMAX")))
+
+
+```
+
+
+Rolling CV shows nearly identical errors for Auto vs Manual (RMSE ≈ 0.00377).
+AUTO.ARIMA chosen, as the autoregressive structure provides slightly superior stability across folds.
+
+### Model Creation
+
+```{r}
+#| warning: false
+
+best_nas <- if (best_nas_is_auto) m_nas_auto else m_nas_manual
+
+cat("Final NASDAQ model summary:\n"); print(summary(best_nas))
+
+resid_nas <- residuals(best_nas)
+
+par(mfrow=c(1,2))
+plot(resid_nas, type="l", main="NASDAQ Residuals"); abline(h=0,lty=2); grid()
+acf(resid_nas, main="Residual ACF"); grid()
+par(mfrow=c(1,1))
+
+lb_nas <- Box.test(resid_nas, lag=20, type="Ljung-Box")
+cat(sprintf("Ljung-Box p (lag=20): %.4f\n", lb_nas$p.value))
+
+co_nas <- coef(best_nas)
+b_spx_nas <- co_nas[grep("SP500_ret", names(co_nas))]
+b_vix_nas <- co_nas[grep("VIX_ret",    names(co_nas))]
+
+cat("\nRegression portion (standardized xreg):\n")
+cat(sprintf(
+"NASDAQ_ret_t = %.4f·SP500_ret_std_t %+ .4f·VIX_ret_std_t + ARMA errors\n",
+ifelse(length(b_spx_nas)==0,0,b_spx_nas),
+ifelse(length(b_vix_nas)==0,0,b_vix_nas)
+))
+
+
+```
+
+Final model confirms the relationships: NASDAQ_ret increases with SPX_ret and decreases with VIX_ret, while AR/MA terms capture market persistence. Residuals pass diagnostics (Ljung–Box p = 0.48).
+
+### Forecasting
+```{r}
+#| warning: false
+#| fig.width: 10
+#| fig.height: 5
+
+H <- 30
+
+# Forecast SPX & VIX returns
+
+spx_fc_nas <- forecast::forecast(auto.arima(returns$SP500_ret), h = H)$mean
+vix_fc_nas <- forecast::forecast(auto.arima(returns$VIX_ret),   h = H)$mean
+
+Xfut_nas <- cbind(
+SP500_ret = as.numeric(spx_fc_nas),
+VIX_ret   = as.numeric(vix_fc_nas)
+)
+
+Xfut_nasS <- scale(
+Xfut_nas,
+center = attr(scale(as.matrix(returns[,c("SP500_ret","VIX_ret")])),
+"scaled:center"),
+scale  = attr(scale(as.matrix(returns[,c("SP500_ret","VIX_ret")])),
+"scaled:scale")
+)
+
+nas_ret_fc <- forecast(best_nas, xreg = Xfut_nasS, h = H)
+
+plot(nas_ret_fc, main="NASDAQ Return Forecast — chosen ARIMAX"); grid()
+
+# Convert to level path
+
+last_nas <- tail(price_data$NASDAQ,1)
+nas_level_path <- last_nas * exp(cumsum(as.numeric(nas_ret_fc$mean)))
+
+plot(nas_level_path, type="l",
+xlab="Forecast Step", ylab="NASDAQ Level (approx.)",
+main="NASDAQ Level Path (from return forecasts)")
+grid()
+
+cat(sprintf("Last NASDAQ level: %.2f\n", last_nas))
+cat(sprintf("Forecasted NASDAQ level @%d: %.2f\n",
+H, tail(nas_level_path,1)))
+
+
+```
+
+Forecasts show small positive returns accumulating into a modest upward trend, taking levels from ~22,470 to ~22,937 after 30 steps.
+
+:::
+
+The multivariate analysis reveals a clear hierarchy of cross-market influence. Equities (S&P 500, NASDAQ) are highly interconnected (ρ ≈ 0.95) and strongly driven by VIX, whose coefficients are consistently the largest and most significant. Rising volatility reliably predicts falling equity returns, and the ARIMAX models capture this relationship cleanly.
+
+VIX, in contrast, behaves almost entirely as an autoregressive process, showing minimal responsiveness to equities or Bitcoin, reinforcing its role as an independent risk barometer.
+
+Bitcoin remains largely isolated. Correlations are low, cross-effects are weak, and no traditional asset provides meaningful predictive power. Its movement is dominated by its own AR/MA dynamics rather than macro or equity variables.
+
+USD shows essentially no interaction with the system: coefficients are near zero, correlations are tiny, and ARIMAX models confirm it behaves as an independent, noise-like process at the daily level.
+
+Overall, the multivariate system shows that VIX anchors equity behavior, equities move together, while Bitcoin and USD operate mostly outside this network, offering diversification but limited short-run predictability.

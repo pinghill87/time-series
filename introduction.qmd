@@ -15,22 +15,26 @@ This analysis goes beyond descriptive correlations by applying univariate time s
 
 This project is organized around five analytical angles that reflect the full modeling pipeline used in the analysis:
 
-1. Exploratory Behavior Across Markets
 
-Trends, return distributions, rolling volatilities, and pairwise correlations across Bitcoin, SP500, NASDAQ, VIX, and USD provide initial evidence of how markets behave individually and jointly.
+1. Market Co-Movement & Interdependence
 
-2. Univariate Predictability (ARIMA/SARIMA)
+This angle examines how major financial assets move together—whether trends, cycles, shocks, and volatility tend to align across Bitcoin, equities, volatility indexes, and currency markets. It frames the broader question of whether crypto behaves independently or increasingly integrates with traditional finance.
 
-Each asset’s return series is modeled independently to assess autocorrelation structure, mean reversion, and short-run predictability.
+2. Short-Run Return Dynamics & Predictability
 
-3. Cross-Market Spillovers (ARIMAX)
+Here the focus is on identifying whether any asset exhibits meaningful short-term structure—autocorrelation, mean reversion, or drift—that could support forecasting. This angle evaluates how close each market is to “efficient,” noise-dominated behavior.
 
-Multivariate regression with ARMA errors identifies whether returns in one market (e.g., SP500, VIX) help explain or forecast returns in another market (e.g., Bitcoin).
+3. Cross-Market Influence & Spillovers
 
-4. Volatility Dynamics & Clustering (ARCH–GARCH)
+This perspective investigates whether movements in one asset help explain returns in another. For example, whether equity downturns spill into crypto, or whether volatility shocks propagate across asset classes. It captures directional influence and inter-market sensitivity.
 
-Models quantify volatility persistence in Bitcoin and SP500, testing for clustering and comparing the strength of volatility transmission across markets.
+4. Volatility Persistence & Risk Transmission
 
+Instead of mean returns, this angle looks at the clustering and persistence of volatility, and whether periods of high instability in one market correspond to elevated risk in others. This highlights how shocks propagate even when returns themselves show little autocorrelation.
+
+5. Structural Change & Shock Resilience
+
+This perspective evaluates how markets respond to major events (e.g., the FTX collapse) and whether such shocks create lasting breaks in behavior. It helps determine whether crypto markets undergo regime shifts or quickly revert to their typical noisy patterns.
 
 ## Research Questions
 

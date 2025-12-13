@@ -301,10 +301,9 @@ plot_original_and_diff("Bitcoin")
 run_stationarity("Bitcoin")
 
 
-
-
 plot_acf_pacf("Bitcoin")
 ```
+Bitcoin prices are non-stationary, but the log returns become stationary after differencing, with very little autocorrelation.
 
 #### 2. ARIMA
 ```{r}
@@ -321,6 +320,7 @@ run_arima_diagnostics("Bitcoin")
 
 forecast_arima_asset("Bitcoin")
 ```
+ARIMA selects a simple MA(2)-type model, and diagnostics show clean, white-noise residuals with no remaining structure.
 
 #### 3. SARIMA & Seasonality
 ```{r}
@@ -341,6 +341,8 @@ forecast_sarima_asset("Bitcoin")
 seasonality_analysis("Bitcoin")
 ```
 
+SARIMA collapses to the same model because Bitcoin returns show no meaningful seasonality in the STL decomposition.
+
 #### 4. Benchmarks & Cross-Validation
 ```{r}
 #| results: 'markup'
@@ -354,7 +356,7 @@ compare_benchmarks("Bitcoin")
 ```
 
 ```{r}
-
+#| warning: false
 cv_btc <- cross_validate_sarima("Bitcoin")
 
 cat(
@@ -363,6 +365,8 @@ cat(
 )
 
 ```
+
+ARIMA beats both naïve benchmarks with a 31% lower RMSE, and SARIMA cross-validation shows a very small error (≈0.0017), confirming minimal but detectable short-term predictability.
 
 :::
 
@@ -390,6 +394,8 @@ run_stationarity("SP500")
 plot_acf_pacf("SP500")
 ```
 
+The S&P 500 price series is non-stationary, but its log returns become stationary with very weak autocorrelation.
+
 #### 2. ARIMA
 ```{r}
 #| warning: false
@@ -407,6 +413,7 @@ run_arima_diagnostics("SP500")
 forecast_arima_asset("SP500")
 ```
 
+The selected ARIMA(2,0,2) captures small short-run dynamics, and residual diagnostics show clean, white-noise behavior with no remaining structure.
 
 
 #### 3. SARIMA & Seasonality
@@ -424,7 +431,7 @@ forecast_sarima_asset("SP500")
 
 seasonality_analysis("SP500")
 ```
-
+SARIMA reduces to the same ARMA-type model, as S&P 500 returns show no meaningful seasonality in the STL decomposition.
 
 #### Benchmarks & Cross-Validation
 ```{r}
@@ -437,6 +444,7 @@ compare_benchmarks("SP500")
 ```
 
 ```{r}
+#| warning: false
 cv_spx <- cross_validate_sarima("SP500")
 
 cat(
@@ -445,6 +453,8 @@ cat(
 )
 
 ```
+
+ARIMA meaningfully improves forecast accuracy—37% lower RMSE than the naïve models—and SARIMA cross-validation shows very low one-step error (≈0.00017), confirming only slight but detectable predictability in equity returns.
 :::
 
 ### NASDAQ
@@ -466,6 +476,8 @@ run_stationarity("NASDAQ")
 plot_acf_pacf("NASDAQ")
 ```
 
+NASDAQ prices are non-stationary, but the log returns are stationary with very weak autocorrelation, similar to other equity indexes.
+
 #### 2. ARIMA
 ```{r}
 #| warning: false
@@ -484,6 +496,7 @@ run_arima_diagnostics("NASDAQ")
 forecast_arima_asset("NASDAQ")
 ```
 
+The selected ARIMA(4,0,3) captures slight short-run dependencies, and the residuals are clean and white-noise-like, indicating a well-specified model.
 
 #### 3. SARIMA & Seasonality
 ```{r}
@@ -500,6 +513,8 @@ forecast_sarima_asset("NASDAQ")
 seasonality_analysis("NASDAQ")
 ```
 
+SARIMA collapses to the same structure because NASDAQ returns show no meaningful seasonal pattern in the STL decomposition.
+
 #### Benchmarks & Cross-Validation
 ```{r}
 #| results: 'markup'
@@ -510,6 +525,7 @@ seasonality_analysis("NASDAQ")
 compare_benchmarks("NASDAQ")
 ```
 ```{r}
+#| warning: false
 cv_nasdaq <- cross_validate_sarima("NASDAQ")
 
 cat(
@@ -518,6 +534,8 @@ cat(
 )
 
 ```
+
+ARIMA improves RMSE by 35% compared to the naïve models, and SARIMA cross-validation shows a very small error (~0.00024), suggesting only mild but detectable short-term predictability.
 :::
 
 
@@ -539,6 +557,8 @@ run_stationarity("VIX")
 plot_acf_pacf("VIX")
 ```
 
+VIX prices are highly volatile and non-stationary, but the log returns are stationary with noticeable volatility bursts typical of risk-sentiment measures.
+
 #### 2. ARIMA
 ```{r}
 #| warning: false
@@ -551,6 +571,8 @@ run_arima_diagnostics("VIX")
 
 forecast_arima_asset("VIX")
 ```
+
+The fitted ARIMA(3,0,1) captures modest short-run persistence in volatility spikes, and residual diagnostics show a good fit with mostly white-noise residuals.
 
 
 
@@ -569,6 +591,8 @@ forecast_sarima_asset("VIX")
 seasonality_analysis("VIX")
 ```
 
+SARIMA reduces to the same structure because VIX returns show no meaningful seasonality, only irregular volatility cycles.
+
 #### Benchmarks & Cross-Validation
 ```{r}
 #| results: 'markup'
@@ -579,6 +603,7 @@ seasonality_analysis("VIX")
 compare_benchmarks("VIX")
 ```
 ```{r}
+#| warning: false
 cv_vix <- cross_validate_sarima("VIX")
 
 cat(
@@ -588,6 +613,9 @@ cat(
 
 
 ```
+
+ARIMA improves RMSE by 33% relative to naïve forecasts, and SARIMA cross-validation RMSE (~0.0063) confirms limited but non-zero predictability in short-term VIX movements.
+
 :::
 
 
@@ -609,6 +637,8 @@ run_stationarity("USD")
 plot_acf_pacf("USD")
 ```
 
+USD prices are non-stationary, but the log returns are stationary and show almost no autocorrelation, indicating very weak short-run structure.
+
 #### 2. ARIMA
 ```{r}
 #| warning: false
@@ -624,6 +654,8 @@ run_arima_diagnostics("USD")
 forecast_arima_asset("USD")
 ```
 
+The model collapses to a simple ARIMA(0,0,1), reflecting near-white-noise behavior, and residuals confirm a clean, structureless fit.
+
 
 #### 3. SARIMA & Seasonality
 ```{r}
@@ -638,6 +670,8 @@ forecast_sarima_asset("USD")
 seasonality_analysis("USD")
 ```
 
+SARIMA produces the same model because USD returns exhibit no meaningful seasonality, only small random fluctuations.
+
 #### 4. Benchmarks & Cross-Validation
 ```{r}
 #| results: 'markup'
@@ -648,6 +682,7 @@ seasonality_analysis("USD")
 compare_benchmarks("USD")
 ```
 ```{r}
+#| warning: false
 cv_usd <- cross_validate_sarima("USD")
 
 cat(
@@ -658,7 +693,17 @@ cat(
 
 ```
 
+ARIMA improves RMSE by ~28% over naïve forecasts, though the overall errors are extremely small; SARIMA cross-validation RMSE (~1e-05) confirms that USD returns contain almost no predictable component.
+
 :::
 
-All return series show minimal autocorrelation, consistent with financial market efficiency. Bitcoin fits a simple ARMA(1,0), SPX fits ARMA(2,1), VIX requires a more complex ARMA(3,4), and USD behaves like pure noise. In short, daily returns are almost unpredictable, and models capture only very small short-term dynamics.
+## Results and Insights
+
+Across Bitcoin, the S&P 500, NASDAQ, VIX, and the USD Index, price levels are non-stationary while daily log returns are stationary with minimal autocorrelation—consistent with the stylized fact that financial returns behave like near–white noise.
+
+ARIMA models pick up only small, short-lived dynamics: simple MA(1)/MA(2) or low-order ARMA structures for most assets, with NASDAQ fitting a higher-order ARIMA(4,0,3). These models slightly outperform naïve forecasts but provide only marginal predictive power. SARIMA adds no benefit, confirming that daily financial returns do not contain meaningful seasonal patterns.
+
+Equity indexes (SP500, NASDAQ) show modest autoregressive structure, VIX displays short-run mean reversion, and Bitcoin and USD behave closest to pure noise. Even so, predictive improvements remain limited and forecasts quickly revert toward zero.
+
+Overall, univariate ARIMA models help characterize return behavior but cannot meaningfully forecast price movements. Financial markets remain highly efficient at the daily horizon, leaving only tiny pockets of short-term predictability.
 

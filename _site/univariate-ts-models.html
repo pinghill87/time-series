@@ -510,6 +510,7 @@ alternative hypothesis: stationary</code></pre>
 </div>
 </div>
 </div>
+<p>Bitcoin prices are non-stationary, but the log returns become stationary after differencing, with very little autocorrelation.</p>
 </div>
 <div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="cell">
@@ -552,6 +553,7 @@ AIC=-5932.48   AICc=-5932.46   BIC=-5910.81</code></pre>
 </div>
 </div>
 </div>
+<p>ARIMA selects a simple MA(2)-type model, and diagnostics show clean, white-noise residuals with no remaining structure.</p>
 </div>
 <div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
 <div class="cell">
@@ -594,6 +596,7 @@ AIC=-5932.48   AICc=-5932.46   BIC=-5910.81</code></pre>
 </div>
 </div>
 </div>
+<p>SARIMA collapses to the same model because Bitcoin returns show no meaningful seasonality in the STL decomposition.</p>
 </div>
 <div id="tabset-2-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-4-tab">
 <div class="cell">
@@ -625,6 +628,7 @@ ARIMA outperforms the benchmark models.
  RMSE: 0.001668 </code></pre>
 </div>
 </div>
+<p>ARIMA beats both naïve benchmarks with a 31% lower RMSE, and SARIMA cross-validation shows a very small error (≈0.0017), confirming minimal but detectable short-term predictability.</p>
 </div>
 </div>
 </div>
@@ -671,6 +675,7 @@ alternative hypothesis: stationary</code></pre>
 </div>
 </div>
 </div>
+<p>The S&amp;P 500 price series is non-stationary, but its log returns become stationary with very weak autocorrelation.</p>
 </div>
 <div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
 <div class="cell">
@@ -713,6 +718,7 @@ AIC=-9914.28   AICc=-9914.23   BIC=-9881.76</code></pre>
 </div>
 </div>
 </div>
+<p>The selected ARIMA(2,0,2) captures small short-run dynamics, and residual diagnostics show clean, white-noise behavior with no remaining structure.</p>
 </div>
 <div id="tabset-3-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-3-tab">
 <div class="cell">
@@ -755,6 +761,7 @@ AIC=-9914.28   AICc=-9914.23   BIC=-9881.76</code></pre>
 </div>
 </div>
 </div>
+<p>SARIMA reduces to the same ARMA-type model, as S&amp;P 500 returns show no meaningful seasonality in the STL decomposition.</p>
 </div>
 <div id="tabset-3-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-4-tab">
 <div class="cell">
@@ -786,6 +793,7 @@ ARIMA outperforms the benchmark models.
  RMSE: 0.000166 </code></pre>
 </div>
 </div>
+<p>ARIMA meaningfully improves forecast accuracy—37% lower RMSE than the naïve models—and SARIMA cross-validation shows very low one-step error (≈0.00017), confirming only slight but detectable predictability in equity returns.</p>
 </div>
 </div>
 </div>
@@ -832,6 +840,7 @@ alternative hypothesis: stationary</code></pre>
 </div>
 </div>
 </div>
+<p>NASDAQ prices are non-stationary, but the log returns are stationary with very weak autocorrelation, similar to other equity indexes.</p>
 </div>
 <div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
 <div class="cell">
@@ -877,6 +886,7 @@ AIC=-9232.24   AICc=-9232.13   BIC=-9183.47</code></pre>
 </div>
 </div>
 </div>
+<p>The selected ARIMA(4,0,3) captures slight short-run dependencies, and the residuals are clean and white-noise-like, indicating a well-specified model.</p>
 </div>
 <div id="tabset-4-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-3-tab">
 <div class="cell">
@@ -919,6 +929,7 @@ AIC=-9232.24   AICc=-9232.13   BIC=-9183.47</code></pre>
 </div>
 </div>
 </div>
+<p>SARIMA collapses to the same structure because NASDAQ returns show no meaningful seasonal pattern in the STL decomposition.</p>
 </div>
 <div id="tabset-4-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-4-tab">
 <div class="cell">
@@ -950,6 +961,7 @@ ARIMA outperforms the benchmark models.
  RMSE: 0.000242 </code></pre>
 </div>
 </div>
+<p>ARIMA improves RMSE by 35% compared to the naïve models, and SARIMA cross-validation shows a very small error (~0.00024), suggesting only mild but detectable short-term predictability.</p>
 </div>
 </div>
 </div>
@@ -996,6 +1008,7 @@ alternative hypothesis: stationary</code></pre>
 </div>
 </div>
 </div>
+<p>VIX prices are highly volatile and non-stationary, but the log returns are stationary with noticeable volatility bursts typical of risk-sentiment measures.</p>
 </div>
 <div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
 <div class="cell">
@@ -1038,6 +1051,7 @@ AIC=-3746.32   AICc=-3746.28   BIC=-3719.22</code></pre>
 </div>
 </div>
 </div>
+<p>The fitted ARIMA(3,0,1) captures modest short-run persistence in volatility spikes, and residual diagnostics show a good fit with mostly white-noise residuals.</p>
 </div>
 <div id="tabset-5-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-3-tab">
 <div class="cell">
@@ -1084,6 +1098,7 @@ AIC=-3746.32   AICc=-3746.28   BIC=-3719.22</code></pre>
 </div>
 </div>
 </div>
+<p>SARIMA reduces to the same structure because VIX returns show no meaningful seasonality, only irregular volatility cycles.</p>
 </div>
 <div id="tabset-5-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-4-tab">
 <div class="cell">
@@ -1115,6 +1130,7 @@ ARIMA outperforms the benchmark models.
  RMSE: 0.006289 </code></pre>
 </div>
 </div>
+<p>ARIMA improves RMSE by 33% relative to naïve forecasts, and SARIMA cross-validation RMSE (~0.0063) confirms limited but non-zero predictability in short-term VIX movements.</p>
 </div>
 </div>
 </div>
@@ -1165,6 +1181,7 @@ alternative hypothesis: stationary</code></pre>
 </div>
 </div>
 </div>
+<p>USD prices are non-stationary, but the log returns are stationary and show almost no autocorrelation, indicating very weak short-run structure.</p>
 </div>
 <div id="tabset-6-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-6-2-tab">
 <div class="cell">
@@ -1211,6 +1228,7 @@ AIC=-14424.55   AICc=-14424.54   BIC=-14413.71</code></pre>
 </div>
 </div>
 </div>
+<p>The model collapses to a simple ARIMA(0,0,1), reflecting near-white-noise behavior, and residuals confirm a clean, structureless fit.</p>
 </div>
 <div id="tabset-6-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-6-3-tab">
 <div class="cell">
@@ -1253,6 +1271,7 @@ AIC=-14424.55   AICc=-14424.54   BIC=-14413.71</code></pre>
 </div>
 </div>
 </div>
+<p>SARIMA produces the same model because USD returns exhibit no meaningful seasonality, only small random fluctuations.</p>
 </div>
 <div id="tabset-6-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-6-4-tab">
 <div class="cell">
@@ -1284,13 +1303,20 @@ ARIMA outperforms the benchmark models.
  RMSE: 1e-05 </code></pre>
 </div>
 </div>
+<p>ARIMA improves RMSE by ~28% over naïve forecasts, though the overall errors are extremely small; SARIMA cross-validation RMSE (~1e-05) confirms that USD returns contain almost no predictable component.</p>
 </div>
 </div>
 </div>
-<p>All return series show minimal autocorrelation, consistent with financial market efficiency. Bitcoin fits a simple ARMA(1,0), SPX fits ARMA(2,1), VIX requires a more complex ARMA(3,4), and USD behaves like pure noise. In short, daily returns are almost unpredictable, and models capture only very small short-term dynamics.</p>
-
-
 </section>
+</section>
+<section id="results-and-insights" class="level2">
+<h2 class="anchored" data-anchor-id="results-and-insights">Results and Insights</h2>
+<p>Across Bitcoin, the S&amp;P 500, NASDAQ, VIX, and the USD Index, price levels are non-stationary while daily log returns are stationary with minimal autocorrelation—consistent with the stylized fact that financial returns behave like near–white noise.</p>
+<p>ARIMA models pick up only small, short-lived dynamics: simple MA(1)/MA(2) or low-order ARMA structures for most assets, with NASDAQ fitting a higher-order ARIMA(4,0,3). These models slightly outperform naïve forecasts but provide only marginal predictive power. SARIMA adds no benefit, confirming that daily financial returns do not contain meaningful seasonal patterns.</p>
+<p>Equity indexes (SP500, NASDAQ) show modest autoregressive structure, VIX displays short-run mean reversion, and Bitcoin and USD behave closest to pure noise. Even so, predictive improvements remain limited and forecasts quickly revert toward zero.</p>
+<p>Overall, univariate ARIMA models help characterize return behavior but cannot meaningfully forecast price movements. Financial markets remain highly efficient at the daily horizon, leaving only tiny pockets of short-term predictability.</p>
+
+
 </section>
 
 </main> <!-- /main -->

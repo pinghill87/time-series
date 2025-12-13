@@ -169,6 +169,61 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<p>Data Sources This project uses daily macro-financial data obtained directly from the Federal Reserve Economic Data (FRED) API through the R package <code>quantmod</code>. All datasets were downloaded programmatically to ensure reproducibility and consistent formatting.</p>
+<ol type="1">
+<li>Federal Reserve Economic Data (FRED) All price and index series used in the analysis come from FRED, including:</li>
+</ol>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 41%">
+<col style="width: 26%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Asset / Variable</th>
+<th>FRED Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>S&amp;P 500 Index</td>
+<td><code>SP500</code></td>
+<td>Daily closing levels of the S&amp;P 500, representing broad U.S. equity market performance.</td>
+</tr>
+<tr class="even">
+<td>NASDAQ Composite Index</td>
+<td><code>NASDAQCOM</code></td>
+<td>Tech-heavy U.S. equity index capturing large-cap and growth-oriented stocks.</td>
+</tr>
+<tr class="odd">
+<td>VIX (CBOE Volatility Index)</td>
+<td><code>VIXCLS</code></td>
+<td>Daily closing value of implied volatility (“fear index”).</td>
+</tr>
+<tr class="even">
+<td>Bitcoin Price (USD)</td>
+<td><code>CBBTCUSD</code></td>
+<td>Daily Bitcoin–USD price from FRED’s digital asset database.</td>
+</tr>
+<tr class="odd">
+<td>U.S. Dollar Index</td>
+<td><code>DTWEXBGS</code></td>
+<td>Nominal broad trade-weighted U.S. Dollar Index.</td>
+</tr>
+</tbody>
+</table>
+<p>These were loaded using:</p>
+<pre><code>getSymbols(symbol, src = "FRED", from = start_date, to = end_date)</code></pre>
+<ol type="1">
+<li>Preprocessing &amp; Derived Variables From the raw FRED price levels, the following were constructed:</li>
+</ol>
+<ul>
+<li>Daily log returns: r_t = log(P_t) - log(P_{t-1}) Used for ARIMA, SARIMA, GARCH, VAR/ARIMAX, and all deep learning models.s</li>
+<li>Merged time-aligned dataset All series were merged by date and <code>na.omit()</code> was applied to ensure clean modeling.</li>
+<li>Feature matrices Used in multivariate ARIMAX and deep learning models (SP500, NASDAQ, VIX, USD as predictors).</li>
+</ul>
 
 
 

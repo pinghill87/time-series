@@ -1,3 +1,34 @@
 ---
 title: "Data Sources"
 ---
+
+Data Sources
+This project uses daily macro-financial data obtained directly from the Federal Reserve Economic Data (FRED) API through the R package `quantmod`. All datasets were downloaded programmatically to ensure reproducibility and consistent formatting.
+
+1. Federal Reserve Economic Data (FRED)
+All price and index series used in the analysis come from FRED, including:
+
+| Asset / Variable | FRED Code | Description |
+|-----------------|-----------|-------------|
+| S&P 500 Index | `SP500` | Daily closing levels of the S&P 500, representing broad U.S. equity market performance. |
+| NASDAQ Composite Index | `NASDAQCOM` | Tech-heavy U.S. equity index capturing large-cap and growth-oriented stocks. |
+| VIX (CBOE Volatility Index) | `VIXCLS` | Daily closing value of implied volatility ("fear index"). |
+| Bitcoin Price (USD) | `CBBTCUSD` | Daily Bitcoin–USD price from FRED's digital asset database. |
+| U.S. Dollar Index | `DTWEXBGS` | Nominal broad trade-weighted U.S. Dollar Index. |
+
+These were loaded using:
+
+```
+getSymbols(symbol, src = "FRED", from = start_date, to = end_date)
+```
+
+
+1. Preprocessing & Derived Variables
+From the raw FRED price levels, the following were constructed:
+* Daily log returns:
+r_t = log(P_t) - log(P_{t-1})
+Used for ARIMA, SARIMA, GARCH, VAR/ARIMAX, and all deep learning models.s
+* Merged time-aligned dataset All series were merged by date and `na.omit()` was applied to ensure clean modeling.
+* Feature matrices Used in multivariate ARIMAX and deep learning models (SP500, NASDAQ, VIX, USD as predictors).
+
+

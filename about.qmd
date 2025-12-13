@@ -1,3 +1,126 @@
 ---
 title: "About You"
 ---
+
+---
+title: "About Me"
+---
+
+My name is Soong Ping Hill. I am from San Francisco, California, and have a Bachelors Degree in Neuroscience and Minor in Data Science. I am currently pursuing a M.S degree in Data Science and Analytics at Georgetown University's DSAN program. 
+
+This program has allowed me to develop a strong foundation in data-driven methodologies, machine learning, and advanced analytics while honing my skills in extracting meaningful insights from large datasets to solve real-world problems.
+
+I am passionate about leveraging data science to uncover patterns, drive decision-making, and contribute to impactful solutions across industries.
+
+
+## Education  
+
+**Georgetown University** | *Washington, D.C.*  
+- **Master's in Data Science (DSAN)**  
+  - **GPA**: 3.95  
+  - **Academic Awards**: Returning Student Scholarship
+
+**Boston University College of Arts and Science** | *Boston, MA*  
+- **Bachelor of Arts in Neuroscience**, Minor in Data Science  
+  - **GPA**: 3.57  
+  - **Academic Awards**: Deans List
+
+## Work Experience  
+
+**Silkroll** | *Oakland, CA*  
+**Data Analyst** | *April 2025 – August 2025*  
+
+- Designed and executed MongoDB aggregation pipelines utilizing Metabase to analyze company-wide financial transactions, service fees, and inventory across cash and points-based orders.  
+- Built and optimized interactive dashboards to track sales, returns, and revenue trends, ensuring data accuracy and reliability across historical records.  
+- Automated financial reporting processes, reducing manual effort and improving visibility for stakeholders.  
+
+**Center for Retirement Initiatives** | *Washington, D.C.*  
+**Graduate Student Research Assistant (Georgetown University)** | *October 2024 – March 2025*  
+
+- Analyzed state program data, creating monthly reports on financial metrics and retirement trends in **Tableau**.  
+- Conducted data collection, cleaning, and dataset uploads using **SQL** and **Python**, ensuring data integrity.  
+- Collaborated with CRI stakeholders to identify new research inquiries and provide evidence-based insights.  
+
+**RESET.BUILD** | *Shanghai, China*  
+**Data Science Intern (BU Shanghai Internship Program)** | *June 2024 – August 2024*  
+
+- Developed **Python** scripts to automate big data cleaning, extraction, format corrections, and air quality analysis, saving **8 hours** of manual work per dataset.  
+- Collaborated with cross-functional teams to design and implement data dashboards in **Google Looker Studio**, improving data access and driving internal insights.  
+- Enhanced front-end **UI** using **HTML** and **CSS**, ensuring a professional and user-friendly experience.  
+
+**Ecommerce Store** | *San Francisco, CA*  
+**Owner and Manager** | *June 2023 – Present*  
+
+- Managed e-commerce store with **$9,000** in revenue, overseeing inventory, customer service, **SEO**, and marketing strategies.  
+- Applied business insights to adjust pricing strategies and product offerings, enhancing store profitability.  
+
+**Radboud University** | *Nijmegen, Netherlands*  
+**Machine Learning Research Intern** | *May 2023 – July 2023*  
+
+- Programmed pipeline to cut, synchronize, and analyze over **2 TB** of neuronal data and video.  
+- Utilized **DeepLabCut pose-estimation** to analyze cortico-hippocampal activity during memory consolidation.  
+- Partnered with a diverse research team and mentored new interns, creating a written guide for onboarding.  
+
+**UCSF Medical Center – Anesthesia** | *San Francisco, CA*  
+**Data Research Intern** | *May 2022 – August 2022*  
+
+- Contributed to a research study on **pupillary unrest** in ambient light in response to opioids.  
+- Cleaned and visualized data for analysis, designing figures and reports.  
+- **Publication**: *Merlin D. Larsson, Rachel McKay, Soong Ping Hill, Practical Guide to Portable Pupillometry*
+
+## Projects
+
+### [**Voting Rate Analysis and Predictive Modeling**](projects/DS5000/index.qmd#voting-analysis){.project-link}
+* Integrated U.S Census Bureau API to collect and process demographic and socioeconomic data related to voting rates
+* Applied clustering techniques (**K-Means**, **DBSCAN**, **Agglomerative Clustering**) to segment voters by behavior
+* Built and evaluated predictive models (**Random Forest**, **Regression**) to analyze key factors influencing voting rates and predict voter participation trends
+
+### [**Statistical Analysis of Airbnb Listing Prices Across Cities**](projects/DS5100/index.qmd#airbnb-analysis){.project-link}
+* Conducted statistical analysis (**t-tests**, **ANOVAs**, **correlation**, **chi-squared**) to evaluate how location, host status, and other factors impact Airbnb pricing
+* Visualized data patterns with **ggplot** and presented actionable insights to optimize pricing strategies for hosts
+
+### **Covid-19 Data Analysis and Policy Identification** 
+* Integrated COVID-19 data from three sources into data lake via **Azure Data Factory**, prepared for processing in **Azure Synapse**, and analyzed in **Power BI** to identify the top three policies for controlling COVID spread
+
+### **Analysis of U.S Airline Operational Performance**
+* Queried Bureau of Transportation Statistics flight data using **SQL** to analyze delays and cancellations across airlines and airports
+* Created an **R-based** report with visualizations to assess operational efficiency and highlight opportunities for improving flight scheduling and customer experience
+* Identified key delay and cancellation factors, providing data-driven insights to enhance airline performance
+
+### **NBA Player Performance Model**
+* Built and optimized an **LSTM deep learning model** to forecast NBA player performance based on historical game data 
+* Model explained **68%** of variation in player performance, improving predictive power over traditional methods
+* Provided data-driven insights for player evaluation and strategy optimization in sports management
+  
+## Technical Skills
+
+### **Programming & Data Science**
+**Proficient:** Python (pandas, numpy, scikit-learn, matplotlib, seaborn), R (ggplot2, dplyr, tidyverse), SQL, PyTorch, TensorFlow
+
+**Familiar:** Java, C++, MATLAB, Swift, JavaScript, HTML, CSS
+
+### **Machine Learning & Analytics**
+**Proficient:** Supervised Learning (Random Forest, Regression, SVM), Unsupervised Learning (K-Means, DBSCAN, Hierarchical Clustering), Deep Learning (LSTM, Neural Networks), Feature Selection, Cross-Validation, Statistical Analysis
+
+**Familiar:** NLP, Computer Vision, Time Series Analysis, A/B Testing, Bayesian Methods
+
+### **Data Engineering & Cloud**
+**Proficient:** AWS (S3, EC2, Lambda), Microsoft Azure (Data Factory, Synapse), SQL Server, PostgreSQL, Git/GitHub, Hadoop, Snowflake
+
+**Familiar:**  Google Cloud Platform, Apache Spark, Docker, Kubernetes, DBT, Apache Airflow
+
+### **Visualization & BI Tools**
+**Proficient:** Tableau, Looker Studio, Power BI, Matplotlib, Seaborn, ggplot2, Plotly
+
+**Familiar:** D3.js, Bokeh, ArcGIS,
+
+### **Development & Collaboration**
+**Proficient:** Git/GitHub, Jupyter, RStudio, VS Code, Excel, PowerPoint, Visio
+
+**Familiar:** Linux/Unix, Bash scripting
+
+**Spoken Languages:** English (Native), Mandarin (Fluent), Cantonese (Conversational)
+
+**Spoken Languages:** English, Mandarin, Cantonese
+
+[Download Resume (PDF)](/resume.pdf){.btn .btn-outline-primary .btn-sm}

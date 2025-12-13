@@ -3,6 +3,12 @@ title: "Financial Time Series Models (ARCH/GARCH)"
 code-fold: true
 ---
 
+## Data Preparation
+
+::: {.panel-tabset}
+
+### Data Loading
+
 ```{r}
 #| warning: false
 #| message: false
@@ -57,10 +63,7 @@ cat("Loaded:", nrow(returns), "returns\n")
 ```
 
 ```{r}
-
 #| warning: false
-
-
 
 # S&P 500 returns
 
@@ -77,6 +80,8 @@ cat(sprintf("Length of BTC returns: %d observations\n", length(btc_ret)))
 
 ```
 
+:::
+
 ## S&P 500
 
 ::: {.panel-tabset}
@@ -84,7 +89,6 @@ cat(sprintf("Length of BTC returns: %d observations\n", length(btc_ret)))
 ### Stationarity & Return Dynamics  
 
 ```{r}
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 5
@@ -113,7 +117,6 @@ The return plot shows volatility clustering, which motivates GARCH-type models.
 
 
 ```{r}
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 4
@@ -130,7 +133,6 @@ This pattern suggests that a low-order ARMA model (e.g., ARMA(1,0), ARMA(1,1), A
 
 ### ARMA Mean Model Selection
 ```{r}
-
 #| warning: false
 
 cand_orders <- list(
@@ -169,7 +171,6 @@ Here I try several candidate ARMA(p,q) models and compare AIC.
 The model with the lowest AIC (e.g., ARMA(2,1) in my run) is chosen as the mean model before adding GARCH.
 
 ```{r}
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 5
@@ -187,7 +188,6 @@ print(arch_test)
 ```
 
 ```{r}
-
 #| warning: false
 #| fig.width: 8
 #| fig.height: 4
@@ -225,10 +225,9 @@ The ACF/PACF of squared residuals have strong, slowly decaying spikes, and the A
 
 ### Garch Model Selection
 ```{r}
-
 #| warning: false
 
-# Extract ARMA mean orders correctly
+# Extract ARMA mean orders 
 
 ord    <- arimaorder(best_mean_fit)
 p_mean <- ord[1]
@@ -288,7 +287,6 @@ cat("Best GARCH model:", best_garch_name, "\n")
 I compare several GARCH(p,q) candidates and use AIC to select the best ARMA+GARCH combination (e.g., ARMA(2,1)–GARCH(2,1)).
 
 ```{r}
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 6
@@ -305,7 +303,6 @@ par(mfrow=c(1,1))
 ```
 
 ```{r}
-
 #| warning: false
 #| fig.width: 8
 #| fig.height: 4
@@ -317,10 +314,9 @@ xlab="z_t", col="lightgray", border="white")
 ```
 
 ```{r}
-
 #| warning: false
 
-# Box-Ljung test for standardized residuals and squared residuals
+# Box-Ljung test 
 
 ljung_resid <- Box.test(z_resid, lag=20, type="Ljung-Box")
 ljung_sqres <- Box.test(z_resid^2, lag=20, type="Ljung-Box")
@@ -341,17 +337,15 @@ This suggests the GARCH model captures the volatility dynamics well.
 ### Final Model & Diagnostics
 
 ```{r}
-
 #| warning: false
 
-# Extract model parameters to help write final equation later
+# Extract model parameters 
 
 best_params <- coef(best_garch_fit)
 cat("Final Model Parameters (SPX):\n")
 print(best_params)
 
-show(best_garch_fit)  # shows mean & variance equations in rugarch format
-
+show(best_garch_fit)  
 ```
 
 
@@ -391,7 +385,6 @@ $$
 
 
 ```{r}
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 5
@@ -422,8 +415,6 @@ The returns also show strong volatility clustering, which again motivates GARCH 
 
 
 ```{r}
-
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 4
@@ -440,8 +431,6 @@ The ACF decays quickly and PACF has only a few small early spikes → a low-orde
 
 ### ARMA Mean Model Selection
 ```{r}
-
-
 #| warning: false
 
 cand_orders_btc <- list(
@@ -479,8 +468,6 @@ Test several ARMA(p,q) candidates and select the lowest-AIC model for BTC return
 
 
 ```{r}
-
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 5
@@ -499,7 +486,6 @@ print(arch_test_btc)
 ```
 
 ```{r}
-
 #| warning: false
 #| fig.width: 8
 #| fig.height: 4
@@ -516,7 +502,6 @@ par(mfrow=c(1,1))
 
 
 ```{r}
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 4
@@ -535,7 +520,6 @@ So a GARCH(p,q) model is appropriate for Bitcoin returns as well.
 
 ### Garch Model Selection
 ```{r}
-
 #| warning: false
 
 ord_btc    <- arimaorder(best_mean_fit_btc)
@@ -599,7 +583,6 @@ cat("Best BTC GARCH model:", best_garch_name_btc, "\n")
 
 
 ```{r}
-
 #| warning: false
 #| fig.width: 10
 #| fig.height: 6
@@ -617,7 +600,6 @@ par(mfrow=c(1,1))
 
 
 ```{r}
-
 #| warning: false
 #| fig.width: 8
 #| fig.height: 4
@@ -630,7 +612,6 @@ xlab="z_t", col="lightgray", border="white")
 
 
 ```{r}
-
 #| warning: false
 
 ljung_resid_btc <- Box.test(z_resid_btc, lag=20, type="Ljung-Box")
@@ -649,7 +630,6 @@ For BTC as well, the standardized residuals after GARCH are much more stable, an
 ### Final Model & Diagnostics
 
 ```{r}
-
 #| warning: false
 
 best_params_btc <- coef(best_garch_fit_btc)
@@ -662,4 +642,6 @@ show(best_garch_fit_btc)
 
 :::
 
-Volatility clustering is clearly present. SPX displays high volatility persistence (GARCH), Bitcoin reacts strongly to shocks with shorter-lived volatility, and VIX shows extreme jumpiness consistent with stress events. GARCH results confirm that returns are hard to predict, but volatility is highly structured and persistent.
+## Results and Insights
+
+Both SP500 and Bitcoin show standard financial behavior: price levels are non-stationary, but returns are stationary with almost no autocorrelation, leading to simple mean models (ARMA(2,1) for SP500, ARMA(1,0) for BTC). Despite minimal return predictability, both series exhibit strong volatility clustering, which the selected GARCH(2,1) models capture well. SP500 shows very persistent volatility (slow decay after shocks), while Bitcoin’s volatility is more reactive but less persistent, consistent with its higher risk profile. Overall, returns remain essentially unpredictable, but volatility is highly structured, and GARCH provides a realistic model of each asset’s risk dynamics.

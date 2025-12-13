@@ -7,7 +7,7 @@ format:
     toc-depth: 2
 ---
 
-## Data Preperation
+## Data Preparation
 
 ::: {.panel-tabset}
 
@@ -17,7 +17,6 @@ format:
 #| warning: false
 #| message: false
 
-# Core libraries
 library(tidyverse)
 library(quantmod)
 library(lubridate)
@@ -65,10 +64,10 @@ stopifnot(length(price_list) >= 2)
 prices_xts <- do.call(merge, price_list)
 colnames(prices_xts) <- names(price_list)
 
-# Remove dates where everything is NA
+# Remove dates where  is NA
 prices_xts <- prices_xts[rowSums(is.na(prices_xts)) < ncol(prices_xts), ]
 
-# Daily log returns (pairwise NA allowed)
+# Daily log returns 
 returns_xts <- diff(log(prices_xts))
 
 
@@ -112,11 +111,11 @@ available  <- intersect(key_assets, colnames(prices_xts))
 
 if (length(available) >= 2) {
 
-  # Extract assets (exclude VIX from normalization)
+  # Extract assets 
   norm_assets <- setdiff(available, "VIX")
   norm_xts <- prices_xts[, norm_assets]
 
-  # Normalize each series independently to 100 at its first non-NA value
+  # Normalize each series 
   for (col in colnames(norm_xts)) {
     series <- norm_xts[, col]
     first_valid_idx <- which(!is.na(series))[1]
@@ -127,7 +126,7 @@ if (length(available) >= 2) {
     }
   }
 
-  # Build Plotly figure
+  # Plot
   fig_norm <- plot_ly()
 
   col_map <- c(
@@ -152,7 +151,7 @@ if (length(available) >= 2) {
     }
   }
   
-  # Add axis labels
+  # axis 
   fig_norm <- fig_norm |>
     layout(
       xaxis = list(title = "Date"),
@@ -175,7 +174,7 @@ Bitcoin has massively outperformed traditional equity indices since 2019, gainin
 #| warning: false
 #| message: false
 
-# Recreate normalized series (same logic as tab 1)
+#  normalized series 
 
 key_assets <- c("Bitcoin", "SP500", "NASDAQ", "VIX")
 available  <- intersect(key_assets, colnames(prices_xts))
@@ -193,7 +192,7 @@ if (length(available) >= 2) {
 
   base_xts <- sweep(base_xts, 2, as.numeric(base_xts[1, ]), "/") * 100
 
-  # Start fresh
+#Plot
   fig_vix <- plot_ly()
 
   col_map <- c(Bitcoin = "#FF9500",
@@ -213,7 +212,7 @@ if (length(available) >= 2) {
       )
   }
 
-  # Add VIX
+  # VIX
   if (!is.null(vix_series)) {
     vix_clean <- na.omit(vix_series)
 
@@ -229,7 +228,7 @@ if (length(available) >= 2) {
       )
   }
 
-  # Vertical crisis events
+  #  Crisis events
   events <- tibble::tibble(
     date  = as.Date(c("2020-03-12", "2022-02-24", "2022-11-11", "2023-03-10")),
     label = c("COVID Crash", "Ukraine War", "FTX Collapse", "SVB Crisis"),
@@ -310,12 +309,12 @@ if (length(have_ret) >= 3 && nrow(returns_xts) > 60) {
 
   win <- 60
 
-  # Convert returns to a tidy df
+  # Convert returns to tidy df
   ret_df <- returns_xts[, have_ret] |>
     as.data.frame() |>
     mutate(Date = index(returns_xts))
 
-  # Rolling correlation function
+  # correlation function
   roll_corr <- function(x, y, k) {
     out <- rep(NA_real_, length(x))
     for (i in seq_len(length(x))) {
@@ -432,9 +431,8 @@ if (length(heat_avail) >= 2 && nrow(returns_xts) > 40) {
     }
   }
 
-  # -------------------------------------------------------
-  #   Build heatmap matrix
-  # -------------------------------------------------------
+  #  Heatmap matrix
+
   if (length(rows) > 0) {
 
     corr_df <- do.call(rbind, lapply(rows, as.data.frame))
@@ -442,21 +440,18 @@ if (length(heat_avail) >= 2 && nrow(returns_xts) > 40) {
 
     mat <- as.matrix(corr_df[, -1, drop = FALSE])
 
-    # -------------------------------------------------------
-    #   FIXED X-AXIS LABELS — clean and readable
-    # -------------------------------------------------------
+    # X axis
+
     n_cols <- ncol(t(mat))
-    label_step <- 6   # show every 6th window (change to 10 or 12 if you want cleaner)
+    label_step <- 6   # show every 6th window
 
     col_labels <- ifelse(
       seq_len(n_cols) %% label_step == 0,
       format(corr_df$Date, "%Y-%m")[seq_len(n_cols)],
       ""
     )
-
-    # -------------------------------------------------------
+   
     #   Heatmap
-    # -------------------------------------------------------
     pheatmap(
       t(mat),
       cluster_rows = FALSE,
@@ -498,17 +493,13 @@ The heatmap shows sustained positive correlation between Bitcoin and S&P 500 (re
 #| message: false
 
 
-# Debug: Check what we're working with
 
-
-
-# Try converting differently
 sp500_vec <- as.vector(returns_xts[, "SP500"])
 btc_vec <- as.vector(returns_xts[, "Bitcoin"])
 
 if (all(c("Bitcoin", "SP500") %in% colnames(returns_xts))) {
 
-  # Calculate volatility using vectors directly with na.rm = TRUE
+
   vol <- tibble(
     Date = index(returns_xts)
   )
@@ -537,7 +528,7 @@ if (all(c("Bitcoin", "SP500") %in% colnames(returns_xts))) {
 
     fig_vol <- plot_ly()
     
-    # Add Bitcoin volatility
+    #  Bitcoin volatility
     if (sum(is.finite(vol$BTC)) > 0) {
       fig_vol <- fig_vol |>
         add_trace(
@@ -641,35 +632,36 @@ Bitcoin's volatility consistently runs 2-4x higher than the S&P 500, with dramat
 #| fig.width: 9
 #| fig.height: 5
 
-if (all(c("Bitcoin", "SP500") %in% colnames(prices_xts))) {
+required <- c("Bitcoin", "SP500", "USD")
 
-# Convert to monthly levels
-
-m_prices <- tryCatch(
-xts::to.monthly(prices_xts[, c("Bitcoin", "SP500", "USD")],
-indexAt = "lastof", OHLC = FALSE),
-error = function(e) NULL
-)
-
-if (!is.null(m_prices)) {
-btc_m <- m_prices[, "Bitcoin"]
-spx_m <- m_prices[, "SP500"]
-usd_m <- if ("USD" %in% colnames(m_prices)) m_prices[, "USD"] else NULL
+if (all(required %in% colnames(prices_xts))) {
 
 
+  btc_m <- xts::to.monthly(prices_xts[, "Bitcoin"],
+                           indexAt = "lastof", OHLC = FALSE)
+
+  spx_m <- xts::to.monthly(prices_xts[, "SP500"],
+                           indexAt = "lastof", OHLC = FALSE)
 
 
-m_ret <- merge(diff(log(btc_m)), diff(log(spx_m)))
-colnames(m_ret) <- c("BTC_ret", "SPX_ret")
+  usd_m <- apply.monthly(
+    prices_xts[, "USD"],
+    mean, na.rm = TRUE
+  )
 
-df <- tibble(
-  Date    = index(m_ret),
-  BTC_ret = as.numeric(m_ret[, "BTC_ret"]),
-  SPX_ret = as.numeric(m_ret[, "SPX_ret"])
-)
+  # BTC and SP
+  m_ret <- merge(
+    diff(log(btc_m)),
+    diff(log(spx_m))
+  )
+  colnames(m_ret) <- c("BTC_ret", "SPX_ret")
 
-if (!is.null(usd_m)) {
-  df <- df |>
+  #  USD
+  df <- tibble(
+    Date    = index(m_ret),
+    BTC_ret = as.numeric(m_ret$BTC_ret),
+    SPX_ret = as.numeric(m_ret$SPX_ret)
+  ) |>
     left_join(
       tibble(
         Date = index(usd_m),
@@ -677,68 +669,64 @@ if (!is.null(usd_m)) {
       ),
       by = "Date"
     )
-}
 
-z <- function(x) {
-  if (all(is.na(x)) || sd(x, na.rm = TRUE) == 0) return(rep(NA_real_, length(x)))
-  as.numeric(scale(x))
-}
+  # Z-score 
+  z <- function(x) {
+    if (all(is.na(x)) || sd(x, na.rm = TRUE) == 0) return(rep(NA_real_, length(x)))
+    as.numeric(scale(x))
+  }
 
-df <- df |>
-  mutate(
-    BTC_z = z(BTC_ret),
-    SPX_z = z(SPX_ret),
-    USD_z = if (!is.null(usd_m)) z(USD) else NA_real_
-  )
-
-ggplot(df, aes(Date)) +
-  geom_line(aes(y = BTC_z, color = "BTC (z)"), linewidth = 1) +
-  geom_line(aes(y = SPX_z, color = "S&P 500 (z)"), linewidth = 1, alpha = 0.8) +
-  geom_line(aes(y = USD_z, color = "USD Index (z)"),
-            linewidth = 0.9, linetype = "dashed", alpha = 0.8) +
-  labs(
-    title = "Bitcoin & S&P vs USD Dollar Strength (Monthly, Z-scored)",
-    subtitle = "When the dollar strengthens, risk assets often struggle",
-    x = NULL,
-    y = "Z-score (standardized units)",
-    color = NULL
-  ) +
-  scale_color_manual(
-    values = c(
-      "BTC (z)"        = "#FF9500",
-      "S&P 500 (z)"    = "#1f77b4",
-      "USD Index (z)"  = "#7f7f7f"
+  df <- df |>
+    mutate(
+      BTC_z = z(BTC_ret),
+      SPX_z = z(SPX_ret),
+      USD_z = z(USD)
     )
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "top")
 
+  # Plot
+  ggplot(df, aes(Date)) +
+    geom_line(aes(y = BTC_z, color = "BTC (z)"), linewidth = 1) +
+    geom_line(aes(y = SPX_z, color = "S&P 500 (z)"), linewidth = 1, alpha = 0.8) +
+    geom_line(aes(y = USD_z, color = "USD Index (z)"),
+              linewidth = 0.9, linetype = "dashed", alpha = 0.8) +
+    labs(
+      title = "Bitcoin & S&P 500 vs USD Dollar Strength",
+      subtitle = "Monthly data, standardized (z-scores)",
+      x = NULL,
+      y = "Z-score",
+      color = NULL
+    ) +
+    scale_color_manual(
+      values = c(
+        "BTC (z)"       = "#FF9500",
+        "S&P 500 (z)"   = "#1f77b4",
+        "USD Index (z)" = "#7f7f7f"
+      )
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(legend.position = "top")
 
 } else {
-cat("Could not build monthly macro overlay.\n")
+  cat("Need Bitcoin, SP500, and USD series for macro overlay.\n")
 }
-} else {
-cat("Need Bitcoin and SP500 price series for macro overlay.\n")
-}
+
 
 ```
 
-When the dollar strengthens (gray dashed line spikes upward), both Bitcoin and S&P 500 often experience downward pressure, visible in the synchronized drops during 2022 and late 2024. This makes sense since a strong dollar typically signals risk-off sentiment and tighter financial conditions globally. Both assets show similar sensitivity to dollar movements, reinforcing that Bitcoin still behaves somewhat like a risk asset responsive to macro liquidity conditions. The z-scored format (standardized units) makes it easier to compare movements across different scales.
+When the dollar strengthens, both Bitcoin and S&P 500 often experience downward pressure, visible in the synchronized drops during 2022 and late 2024. This makes sense since a strong dollar typically signals risk-off sentiment and tighter financial conditions globally. Both assets show similar sensitivity to dollar movements, reinforcing that Bitcoin still behaves somewhat like a risk asset responsive to macro liquidity conditions. The z-scored format (standardized units) makes it easier to compare movements across different scales.
 
 :::
 
-## Conclusion
+## Key Findings
 
-### Key Findings from Market Behavior Analysis
+### Market Behavior
+Bitcoin has dramatically outperformed equities since 2019 (3000%+ vs. ~300% for S&P 500 and NASDAQ) but with far greater risk. Its volatility is consistently 2–4× higher and spikes sharply during crises (e.g., 160%+ during 2020 and 2021–22), whereas equity volatility remains far more stable.
 
-This data visualization page reveals critical insights into how Bitcoin interacts with traditional financial markets across multiple dimensions. Bitcoin has delivered extraordinary returns since 2019, gaining over 3000% compared to roughly 300% for both S&P 500 and NASDAQ, but this outperformance comes with substantially higher risk. Bitcoin's volatility consistently runs 2-4x higher than equities, with dramatic spikes exceeding 160% annualized volatility during the March 2020 crash and 2021-2022 crypto cycle, while the S&P 500 maintains relatively stable volatility between 10-30%.
+### Shifting Relationships
+Correlations show that Bitcoin moved closely with equities from 2020–2022 (often >0.5), behaving like a high-beta risk asset. Since late 2024, these correlations have weakened, indicating more independent behavior. Bitcoin’s correlation with the VIX remains negative—rising when fear falls—though this relationship has also softened recently.
 
-### Evolution of Market Relationships
-The correlation analysis demonstrates that Bitcoin's relationship with traditional markets has undergone significant transformation. During 2020-2022, Bitcoin tracked closely with both NASDAQ and S&P 500 (correlations often above 0.5), behaving like a risk asset during the pandemic boom and subsequent Fed tightening. However, since late 2024, these correlations have weakened significantly, suggesting Bitcoin is transitioning from moving in lockstep with equities to establishing more independent price action. The VIX relationship remains consistently negative throughout, meaning Bitcoin tends to rise when market fear drops, though recent years show weaker correlation with Bitcoin's swings compared to traditional market stress signals.
-
-### Macro Sensitivity and Crisis Dynamics
-Bitcoin demonstrates clear sensitivity to macroeconomic conditions, particularly dollar strength. When the dollar strengthens, both Bitcoin and S&P 500 often experience downward pressure, reinforcing that Bitcoin still behaves somewhat like a risk asset responsive to macro liquidity conditions. Major VIX spikes during crisis moments (COVID crash, Ukraine war, FTX collapse, SVB crisis) consistently trigger sharp selloffs across markets, but Bitcoin's reaction to these traditional market fear signals has become more muted in 2024-2025 compared to earlier years. This pattern suggests possible market maturation or a shift in investor composition less spooked by traditional equity market stress.
+### Macro Sensitivity & Crisis Patterns
+Bitcoin responds meaningfully to macro conditions, especially dollar strength, which pressures both Bitcoin and equities. Historically, major VIX spikes triggered simultaneous selloffs across markets, but Bitcoin’s reactions in 2024–2025 appear more muted, suggesting market maturation or changing investor profiles.
 
 ### Implications for Spillover Analysis
-
-These visualizations establish the empirical foundation for understanding volatility spillovers between crypto and traditional markets. Bitcoin's high but declining volatility, evolving correlations with equities, persistent negative relationship with market fear indicators, and sensitivity to dollar strength all point to complex transmission mechanisms that warrant deeper investigation through formal time series modeling. The evidence suggests Bitcoin is neither fully independent nor perfectly correlated with traditional markets, occupying a dynamic middle ground where spillover effects likely vary by market regime, crisis type, and time horizon. This sets the stage for the subsequent univariate, multivariate, and volatility modeling work that will quantify these relationships more precisely.
+These patterns set the foundation for formal spillover modeling. Bitcoin exhibits high but declining volatility, shifting equity correlations, persistent (but weakening) sensitivity to market stress, and clear macro-linkages. Collectively, these trends imply that spillover effects are dynamic, regime-dependent, and likely asymmetric—motivating the deeper univariate, multivariate, and volatility analyses that follow.

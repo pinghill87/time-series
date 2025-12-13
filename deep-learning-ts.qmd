@@ -5,22 +5,13 @@ code-fold: true
 
 ```{r}
 #| warning: false
-#| message: false
-# Core setup: NO keras package, only tensorflow + tf$keras
+
 
 library(tensorflow)
 library(reticulate)
 
-# Let tensorflow manage the Python env it installed
-
-# (Usually called "r-tensorflow"; no need to force conda "base")
-
-# If you ever need: reticulate::py_config()
-
 tf <- tensorflow::tf
 keras <- tf$keras
-
-# General R libs
 
 library(quantmod)
 library(tidyverse)
@@ -84,7 +75,7 @@ btc_scaled <- scale(btc_ret)
 y <- as.numeric(btc_scaled)
 
 lookback <- 30
-horizon  <- 1  # (kept for clarity, not used directly here)
+horizon  <- 1  
 
 make_sequences <- function(series, lookback) {
 X <- list()
@@ -112,7 +103,7 @@ y_train <- seqs$Y[1:train_idx]
 X_val   <- seqs$X[(train_idx + 1):n, , , drop = FALSE]
 y_val   <- seqs$Y[(train_idx + 1):n]
 
-# Convert R arrays → TensorFlow tensors (required for Keras 3.x)
+# Convert R arrays 
 X_train_tf <- tf$convert_to_tensor(X_train, dtype = tf$float32)
 y_train_tf <- tf$convert_to_tensor(y_train, dtype = tf$float32)
 X_val_tf   <- tf$convert_to_tensor(X_val, dtype = tf$float32)
@@ -177,8 +168,6 @@ pred_rnn <- rnn_model$predict(X_val_tf, verbose = 0L)
 rmse_rnn <- sqrt(mean((as.numeric(pred_rnn) - as.numeric(y_val))^2))
 cat("RNN RMSE:", round(rmse_rnn, 6), "\n")
 
-#| warning: false
-#| message: false
 
 rnn_loss <- data.frame(
 epoch    = 1:length(history_rnn$history$loss),
@@ -254,6 +243,7 @@ color = "Legend"
 ```{r}
 #| warning: false
 #| message: false
+
 lstm_model <- keras$models$Sequential()
 lstm_model$add(keras$layers$Input(shape = as.integer(c(lookback, 1))))
 lstm_model$add(keras$layers$LSTM(units = 32L))
@@ -347,11 +337,9 @@ knitr::kable(digits = 6)
 :::
 
 
-The univariate deep learning models produced meaningful differences in forecasting performance, especially when compared against the traditional ARIMA models from Homework 3. Across the three architectures, the LSTM achieved the lowest RMSE (0.719), followed closely by the GRU (0.721) and then the vanilla RNN (0.727). This performance hierarchy is consistent with the theoretical strengths of each model: LSTMs capture long-term dependencies through explicit memory gates, GRUs provide a lighter and faster alternative with similar expressiveness, and basic RNNs struggle with noisy and volatile series like Bitcoin returns.
-
-A clear pattern emerged when examining forecast behavior. While the actual BTC return series exhibits extreme spikes and large jumps, the deep learning models produce smoothed, mean-reverting forecasts. This reflects the effect of MSE loss, dropout regularization, and early stopping: the networks learn to avoid chasing high-variance noise and instead model the underlying conditional mean. This improves RMSE but limits the models’ ability to anticipate large shocks—an expected trade-off when forecasting highly volatile financial assets.
-
-Compared to ARIMA, the deep learning models demonstrated greater stability and better generalization on the validation set. ARIMA captured some short-term autocorrelation but could not adapt to nonlinear patterns or sudden regime shifts. Deep learning provided modest improvements in RMSE and produced cleaner forecasts, though these models remain limited in long-horizon accuracy. Overall, this comparison illustrates that deep learning can outperform classical models for noisy financial returns, but the choice of model depends on whether the goal is minimizing error, capturing shocks, or interpreting underlying structure.
+The deep learning models showed clear performance differences, with LSTM achieving the best RMSE (0.719), followed closely by GRU (0.721) and then the vanilla RNN (0.727). This ranking reflects their design: LSTMs capture long-term structure, GRUs offer similar ability with fewer parameters, and basic RNNs struggle with noisy, volatile data like Bitcoin returns.
+All models produced smoothed, mean-reverting forecasts rather than reacting to extreme BTC spikes—an expected effect of MSE loss, dropout, and early stopping. This improves RMSE but prevents the networks from anticipating large shocks.
+Compared with ARIMA, the deep learning models were more stable, generalized better, and captured nonlinear patterns that ARIMA missed. Although the accuracy gains were modest and long-horizon forecasts remain difficult, deep learning provided cleaner
 
 
 ## Multivariate Deep Learning Models (BTC + SP500 + NASDAQ + VIX + USD)
@@ -364,11 +352,8 @@ Compared to ARIMA, the deep learning models demonstrated greater stability and b
 #| warning: false
 #| message: false
 
-# price_data already exists from earlier; it has:
 
-# columns: Index (date), Bitcoin, SP500, VIX, NASDAQ, USD
-
-# ---- Compute log returns for all series ----
+# Compute log returns 
 
 returns_multi <- price_data |>
 transmute(
@@ -381,12 +366,12 @@ USD_ret     = c(NA, diff(log(USD)))
 ) |>
 drop_na()
 
-# Put Bitcoin_ret first so it's the forecast target
+
 
 features_df <- returns_multi |>
 select(Date, Bitcoin_ret, SP500_ret, NASDAQ_ret, VIX_ret, USD_ret)
 
-# ---- Scale predictors (except Date) ----
+
 
 scaled_mat <- scale(as.matrix(features_df[, -1]))  # numeric matrix
 n_obs      <- nrow(scaled_mat)
@@ -402,7 +387,7 @@ X <- array(0, dim = c(n_seq, lookback, k))
 y <- numeric(n_seq)
 for (i in 1:n_seq) {
 X[i, , ] <- mat[i:(i + lookback - 1), ]
-y[i]     <- mat[i + lookback, 1]   # Bitcoin_ret is column 1
+y[i]     <- mat[i + lookback, 1]   
 }
 storage.mode(X) <- "double"
 storage.mode(y) <- "double"
@@ -471,7 +456,7 @@ This preparation allows the RNN, GRU, and LSTM models to learn both temporal pat
 #| warning: false
 #| #| message: false
 
-# Early stopping callback (optional but nice)
+# Early stopping callback
 
 es_cb <- keras$callbacks$EarlyStopping(
 monitor = "val_loss",
@@ -511,8 +496,7 @@ pred_rnn_m <- rnn_model_m$predict(X_val_m_tf, verbose = 0L)
 rmse_rnn_m <- sqrt(mean((as.numeric(pred_rnn_m) - as.numeric(y_val_m))^2))
 cat("Multivariate RNN RMSE:", round(rmse_rnn_m, 6), "\n")
 
-#| warning: false
-#| message: false
+
 
 rnn_loss_m <- data.frame(
 epoch    = 1:length(hist_rnn_m$history$loss),
@@ -697,14 +681,17 @@ y     = "Scaled Returns"
 
 ```
 
+The multivariate deep learning models showed small but consistent improvements over the univariate versions, indicating that Bitcoin returns contain weak links to broader financial variables (SP500, NASDAQ, VIX, USD). Among the architectures, the GRU performed best (RMSE ≈ 0.714), slightly ahead of the LSTM, reflecting the efficiency of gated models in handling noisy, nonlinear series. All models learned smoothly, with stable training/validation curves and no signs of overfitting, and the added predictors helped reduce idiosyncratic noise.
+As in the univariate case, forecasts remained highly smoothed, oscillating around zero because MSE loss discourages reacting to large, unpredictable shocks. Compared with classical multivariate models, GRU/LSTM networks handled nonlinear interactions more effectively, though the accuracy gains were modest. Overall, multivariate deep learning provides incremental improvements in short-term forecasting but cannot overcome the fundamental unpredictability of Bitcoin returns.
+
 :::
 
-The multivariate deep learning models provided several meaningful insights into how additional economic and financial variables influence the forecasting of Bitcoin returns. Compared to the univariate models, all three architectures—RNN, GRU, and LSTM—achieved modest improvements in RMSE once SP500, NASDAQ, VIX, and the USD Index were incorporated as inputs. This suggests that Bitcoin’s short-term return dynamics contain weak but non-zero relationships with broader macro-financial factors, even though the asset remains highly volatile and partially decoupled from traditional markets.
+## Results and Insights:
 
-Among the deep learning models, the GRU performed best (RMSE ≈ 0.714), followed closely by the LSTM (≈ 0.716). This mirrors the univariate results, reinforcing that gated recurrent architectures handle noisy, nonlinear return series more effectively than a basic RNN. GRUs remain computationally lighter while preserving the ability to capture temporal structure, which may explain their slight advantage. At the same time, the performance differences are small, indicating diminishing returns from additional complexity on this dataset.
+Across both univariate and multivariate settings, the deep learning models exhibit clear and consistent performance patterns. Gated architectures (GRU and LSTM) outperform the vanilla RNN, confirming that mechanisms designed to control information flow are better suited for noisy, weakly predictable series such as Bitcoin returns. In the univariate case, LSTM achieves the lowest RMSE (≈ 0.719), followed closely by GRU (≈ 0.721), with the RNN trailing (≈ 0.727). Performance differences are modest but systematic, indicating diminishing returns from increased architectural complexity.
 
-Training and validation curves show stable learning behavior across all models: validation loss remains below or close to training loss, suggesting good generalization rather than overfitting. The flatter slopes in the multivariate models indicate that adding external predictors helps regularize the model by smoothing out purely idiosyncratic Bitcoin noise. However, the models still predict a highly dampened version of reality—small oscillations around zero—because daily Bitcoin returns are dominated by unpredictable shocks. MSE loss naturally penalizes large deviations, incentivizing the network to learn the conditional mean rather than the extremes.
+Introducing macro-financial variables (S&P 500, NASDAQ, VIX, and USD Index) leads to small but consistent improvements in forecast accuracy across all models. In the multivariate setting, the GRU performs best overall (RMSE ≈ 0.714), slightly outperforming the LSTM (≈ 0.716), while the RNN remains the weakest performer. This shift suggests that GRUs strike an effective balance between flexibility and regularization when additional predictors are present, capturing weak cross-market signals without overfitting.
 
-Compared to traditional multivariate models such as VAR or SARIMAX, the deep learning models demonstrate better adaptability to nonlinear patterns and interactions among predictors. Classical models struggle to capture sudden regime shifts, volatility clustering, and nonlinear dependencies that GRU/LSTM networks can approximate more effectively.
+Training and validation curves across all architectures are stable, with no evidence of divergence or overfitting. Forecasts from both univariate and multivariate models remain highly smoothed and mean-reverting, oscillating around zero rather than reacting to extreme price movements. This behavior reflects the combined effects of MSE loss, dropout, and early stopping, which prioritize conditional mean accuracy and penalize large, unpredictable shocks. While this improves RMSE, it limits the models’ ability to anticipate sudden crashes or rallies.
 
-Overall, this comparison highlights that multivariate deep learning improves short-term forecasting accuracy, but only incrementally. While the performance gains are meaningful, they do not overcome the inherent unpredictability of crypto-assets. If the goal is operational forecasting—such as risk monitoring or short-term directional bias—GRU or LSTM models offer the best balance of performance and stability. However, their ability to forecast large spikes or crashes remains limited, emphasizing that model choice should depend on the practical decision context rather than RMSE alone.
+Compared with classical time-series approaches such as ARIMA, the deep learning models demonstrate superior stability and a greater capacity to capture nonlinear dependencies and interaction effects. However, the absolute gains remain incremental. Multivariate deep learning improves short-term predictive performance but does not overcome the fundamental unpredictability of Bitcoin returns. As a result, GRU and LSTM models are best suited for short-horizon
