@@ -1,1 +1,0 @@
-Sitemap: https://YOUR_GH_USERNAME.github.io/time-series/sitemap.xml
