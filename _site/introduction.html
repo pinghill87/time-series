@@ -179,21 +179,25 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="analytical-angles">Analytical Angles</h2>
 <p>This project is organized around five analytical angles that reflect the full modeling pipeline used in the analysis:</p>
 <ol type="1">
-<li>Exploratory Behavior Across Markets</li>
+<li>Market Co-Movement &amp; Interdependence</li>
 </ol>
-<p>Trends, return distributions, rolling volatilities, and pairwise correlations across Bitcoin, SP500, NASDAQ, VIX, and USD provide initial evidence of how markets behave individually and jointly.</p>
+<p>This angle examines how major financial assets move together—whether trends, cycles, shocks, and volatility tend to align across Bitcoin, equities, volatility indexes, and currency markets. It frames the broader question of whether crypto behaves independently or increasingly integrates with traditional finance.</p>
 <ol start="2" type="1">
-<li>Univariate Predictability (ARIMA/SARIMA)</li>
+<li>Short-Run Return Dynamics &amp; Predictability</li>
 </ol>
-<p>Each asset’s return series is modeled independently to assess autocorrelation structure, mean reversion, and short-run predictability.</p>
+<p>Here the focus is on identifying whether any asset exhibits meaningful short-term structure—autocorrelation, mean reversion, or drift—that could support forecasting. This angle evaluates how close each market is to “efficient,” noise-dominated behavior.</p>
 <ol start="3" type="1">
-<li>Cross-Market Spillovers (ARIMAX)</li>
+<li>Cross-Market Influence &amp; Spillovers</li>
 </ol>
-<p>Multivariate regression with ARMA errors identifies whether returns in one market (e.g., SP500, VIX) help explain or forecast returns in another market (e.g., Bitcoin).</p>
+<p>This perspective investigates whether movements in one asset help explain returns in another. For example, whether equity downturns spill into crypto, or whether volatility shocks propagate across asset classes. It captures directional influence and inter-market sensitivity.</p>
 <ol start="4" type="1">
-<li>Volatility Dynamics &amp; Clustering (ARCH–GARCH)</li>
+<li>Volatility Persistence &amp; Risk Transmission</li>
 </ol>
-<p>Models quantify volatility persistence in Bitcoin and SP500, testing for clustering and comparing the strength of volatility transmission across markets.</p>
+<p>Instead of mean returns, this angle looks at the clustering and persistence of volatility, and whether periods of high instability in one market correspond to elevated risk in others. This highlights how shocks propagate even when returns themselves show little autocorrelation.</p>
+<ol start="5" type="1">
+<li>Structural Change &amp; Shock Resilience</li>
+</ol>
+<p>This perspective evaluates how markets respond to major events (e.g., the FTX collapse) and whether such shocks create lasting breaks in behavior. It helps determine whether crypto markets undergo regime shifts or quickly revert to their typical noisy patterns.</p>
 </section>
 <section id="research-questions" class="level2">
 <h2 class="anchored" data-anchor-id="research-questions">Research Questions</h2>
